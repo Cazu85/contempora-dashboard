@@ -968,7 +968,8 @@ function connectSheet() {
 
 function updateGSBanner(msg, icon='✅') {
   const btn = currentRole === 'admin'
-    ? `<button class="gs-btn" onclick="document.getElementById('modal').classList.add('open')">Cambiar</button>`
+    ? `<button class="gs-btn" onclick="document.getElementById('modal').classList.add('open')">Cambiar</button>
+       <button class="gs-btn" style="margin-left:8px;background:#374151" onclick="showDebug()">🔍 Debug</button>`
     : '';
   document.getElementById('gsBanner').innerHTML =
     `<span class="gs-icon">${icon}</span><div class="gs-text"><strong>Google Sheets</strong><br>${msg}</div>${btn}`;
@@ -1168,6 +1169,32 @@ function applySheetData() {
 
 // Auto-sync every 5 minutes
 setInterval(() => { if (gsSheetId) loadAllSheets(); }, 5 * 60 * 1000);
+
+function showDebug() {
+  if (currentRole !== 'admin') return;
+  const lines = [];
+  Object.keys(SHEET_CONFIG).forEach(name => {
+    const rows = gsDataCache[name];
+    const cfg  = SHEET_CONFIG[name];
+    if (!rows) { lines.push(`❌ ${name}: no cargado`); return; }
+    const col = COL.ytd;
+    const vReal  = getVal(rows, cfg.real_ventas,  col);
+    const vPpto  = getVal(rows, cfg.ppto_ventas,  COL.anual);
+    const vAnt   = getVal(rows, cfg.ant_ventas,   col);
+    const mbReal = getVal(rows, cfg.real_margen,  col);
+    const edReal = getVal(rows, cfg.real_ebitda,  col);
+    const hc     = getVal(rows, cfg.headcount,    COL.feb) || getVal(rows, cfg.headcount, COL.ene);
+    lines.push(`✅ ${name}:`);
+    lines.push(`   Ventas real YTD raw: ${vReal} → ${fmtVentas(vReal)}`);
+    lines.push(`   Ventas ppto anual raw: ${vPpto} → ${fmtVentas(vPpto)}`);
+    lines.push(`   Ventas 2025 YTD raw: ${vAnt} → ${fmtVentas(vAnt)}`);
+    lines.push(`   Margen real YTD raw: ${mbReal} → ${mbReal !== null ? safeMargen(mbReal).toFixed(1)+'%' : '—'}`);
+    lines.push(`   EBITDA real YTD raw: ${edReal} → ${edReal !== null ? safeMargen(edReal).toFixed(1)+'%' : '—'}`);
+    lines.push(`   Headcount raw: ${hc}`);
+    lines.push('');
+  });
+  alert(lines.join('\n'));
+}
 
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
 
