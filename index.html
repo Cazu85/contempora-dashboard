@@ -628,6 +628,17 @@ const companies = [
 let currentPeriod = 'mar';
 let openDrawerId   = null;
 
+// Auth state — declared early so all functions can access
+const DEFAULT_PASSWORDS = { viewer: 'Contempora26', admin: 'FVB1985' };
+function getPasswords() {
+  return {
+    viewer: sessionStorage.getItem('pwd_viewer') || DEFAULT_PASSWORDS.viewer,
+    admin:  sessionStorage.getItem('pwd_admin')  || DEFAULT_PASSWORDS.admin,
+  };
+}
+let currentRole  = null;
+let selectedRole = 'viewer';
+
 function getPeriodData(c) { return c.periods[currentPeriod]; }
 
 // ─────────────────────────────────────────────
@@ -1317,18 +1328,6 @@ function buildSpider() {
 
 // Default passwords — stored in sessionStorage so they reset on close
 // Change via the Admin UI (🔑 Cambiar claves)
-const DEFAULT_PASSWORDS = { viewer: 'Contempora26', admin: 'FVB1985' };
-
-function getPasswords() {
-  return {
-    viewer: sessionStorage.getItem('pwd_viewer') || DEFAULT_PASSWORDS.viewer,
-    admin:  sessionStorage.getItem('pwd_admin')  || DEFAULT_PASSWORDS.admin,
-  };
-}
-
-let currentRole = null;
-let selectedRole = 'viewer';
-
 function selectRole(role) {
   selectedRole = role;
   document.querySelectorAll('.auth-role-tab').forEach(t =>
