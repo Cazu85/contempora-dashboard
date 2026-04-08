@@ -947,11 +947,8 @@ const COL = { anual:1, ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, o
 const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, q1:COL.ytd, ytd:COL.ytd };
 
 function getBestCol(rows, rowNum, per) {
-  // For monthly periods: use the month col if non-zero, otherwise fall back to YTD
   if (per === 'q1' || per === 'ytd') return COL.ytd;
-  const monthCol = PERIOD_COL[per];
-  const v = getVal(rows, rowNum, monthCol);
-  return (v !== null && v !== 0) ? monthCol : COL.ytd;
+  return PERIOD_COL[per]; // use exact month, even if zero
 }
 
 let gsSheetId = null;
@@ -1041,7 +1038,10 @@ function safeMargen(v) {
 
 function fmtVentas(val) {
   if (val === null || val === undefined) return '—';
-  // If value > 100,000 it's likely in full pesos → convert to M$
+  // Values from Google Sheets CSV:
+  // - If > 100,000: likely full pesos → convert to M$ dividing by 1,000,000
+  // - If between 100 and 100,000: already in M$ (millones)
+  // - If < 100: likely billions already formatted
   const mVal = val > 100000 ? val / 1000000 : val;
   if (Math.abs(mVal) >= 1000) return `$${(mVal/1000).toFixed(1)}B`;
   return `$${Math.round(mVal)}M`;
@@ -1059,12 +1059,16 @@ function applySheetData() {
     if (!rows || !cfg) return;
 
     // ── Find rows by label in column A ──────────────────────────
-    function findRow(labels) {
+    function findRow(labels, skipFirst=0) {
       if (!Array.isArray(labels)) labels = [labels];
+      let found = 0;
       for (let i = 0; i < rows.length; i++) {
         const a = (rows[i][0] || '').toString().trim().toLowerCase();
         for (const lbl of labels) {
-          if (a.includes(lbl.toLowerCase())) return i + 1; // 1-based
+          if (a === lbl.toLowerCase() || a.startsWith(lbl.toLowerCase())) {
+            if (found >= skipFirst) return i + 1;
+            found++;
+          }
         }
       }
       return null;
