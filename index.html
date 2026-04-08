@@ -922,24 +922,22 @@ document.querySelectorAll('.period-tab').forEach(btn=>{
 // GOOGLE SHEETS INTEGRATION
 // ─────────────────────────────────────────────
 
-// Row map per sheet: which row number holds each key value (1-indexed)
-// Based on actual template structure read from the file
-const SHEET_ROW_MAP = {
-  Typack:               { ventas_real:56, margen_real:62, ebitda_real:68, ebitda_pct_real:69, cumpl_ppto:4,  cumpl_real:56, headcount:98 },
-  Masterfibra:          { ventas_real:60, margen_real:68, ebitda_real:74, ebitda_pct_real:75, cumpl_ppto:4,  cumpl_real:60, headcount:104},
-  Coppelia:             { ventas_real:56, margen_real:62, ebitda_real:68, ebitda_pct_real:69, cumpl_ppto:4,  cumpl_real:56, headcount:98 },
-  Colgram:              { ventas_real:54, margen_real:59, ebitda_real:65, ebitda_pct_real:66, cumpl_ppto:4,  cumpl_real:54, headcount:95 },
-  'Contempora Factoring':{ ventas_real:50, margen_real:53, ebitda_real:59, ebitda_pct_real:60, cumpl_ppto:4, cumpl_real:50, headcount:88 },
-  'Contempora Leasing': { ventas_real:50, margen_real:53, ebitda_real:59, ebitda_pct_real:60, cumpl_ppto:4,  cumpl_real:50, headcount:88 },
+// Exact row numbers (1-indexed) verified from Excel file. All values in M$ (millones de pesos).
+const SHEET_CONFIG = {
+  'Typack':              { ppto_ventas:4,  ant_ventas:30, ant_margen:36, ant_ebitda:43, real_ventas:56, real_margen:62, real_ebitda:69, headcount:98,  sg_rows:[57,58,59],       sg_ant:[31,32,33] },
+  'Masterfibra':         { ppto_ventas:4,  ant_ventas:32, ant_margen:40, ant_ebitda:47, real_ventas:60, real_margen:68, real_ebitda:75, headcount:104, sg_rows:[61,62,63,64,65], sg_ant:[33,34,35,36,37] },
+  'Coppelia':            { ppto_ventas:4,  ant_ventas:30, ant_margen:36, ant_ebitda:43, real_ventas:56, real_margen:62, real_ebitda:69, headcount:98,  sg_rows:[57,58,59],       sg_ant:[31,32,33] },
+  'Colgram':             { ppto_ventas:4,  ant_ventas:29, ant_margen:34, ant_ebitda:41, real_ventas:54, real_margen:59, real_ebitda:66, headcount:95,  sg_rows:[55,56],          sg_ant:[30,31] },
+  'Contempora Factoring':{ ppto_ventas:4,  ant_ventas:27, ant_margen:30, ant_ebitda:37, real_ventas:50, real_margen:53, real_ebitda:60, headcount:88,  sg_rows:[],               sg_ant:[] },
+  'Contempora Leasing':  { ppto_ventas:4,  ant_ventas:27, ant_margen:30, ant_ebitda:37, real_ventas:50, real_margen:53, real_ebitda:60, headcount:88,  sg_rows:[],               sg_ant:[] },
 };
 
-// Month columns: C=2, D=3 ... N=13 (0-indexed in gviz response cols)
-// Col A=0(label), B=1(anual), C=2(Ene)...N=13(Dic), O=14(YTD)
-const MONTH_COL_IDX = { ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, sep:10, oct:11, nov:12, dic:13 };
-const YTD_COL_IDX = 14;
+// Column indices (0-based): A=0, B=1, C=2(Ene)...N=13(Dic), O=14(YTD)
+const COL = { anual:1, ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, oct:10, nov:11, dic:12, ytd:14 };
+const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, q1:COL.ytd, ytd:COL.ytd };
 
 let gsSheetId = null;
-let gsDataCache = {}; // { sheetName: rows[][] }
+let gsDataCache = {};
 
 function connectSheet() {
   const id = document.getElementById('gsId').value.trim();
@@ -959,159 +957,153 @@ function updateGSBanner(msg, icon='✅') {
 }
 
 function loadAllSheets() {
-  const sheetNames = ['Typack','Masterfibra','Coppelia','Colgram','Contempora Factoring','Contempora Leasing'];
-  const promises = sheetNames.map(name => fetchSheet(name));
-  Promise.all(promises).then(results => {
-    results.forEach((rows, i) => { if (rows) gsDataCache[sheetNames[i]] = rows; });
+  const names = Object.keys(SHEET_CONFIG);
+  Promise.all(names.map(n => fetchSheet(n))).then(results => {
+    results.forEach((rows, i) => { if (rows) gsDataCache[names[i]] = rows; });
     const loaded = results.filter(Boolean).length;
     if (loaded > 0) {
-      updateGSBanner(`${loaded} de ${sheetNames.length} hojas cargadas · Última sync: ${new Date().toLocaleTimeString('es-CL')}`);
-      applySheetDataToCompanies();
+      updateGSBanner(`${loaded} hojas cargadas · ${new Date().toLocaleTimeString('es-CL')}`);
+      applySheetData();
       setPeriod(currentPeriod);
     } else {
-      updateGSBanner('Error al leer la hoja. Verifica que esté compartida públicamente.', '❌');
+      updateGSBanner('Error al leer la hoja. Verifica que esté publicada en la web.', '❌');
     }
   });
 }
 
 function fetchSheet(sheetName) {
-  const url = `https://docs.google.com/spreadsheets/d/${gsSheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-  return fetch(url)
-    .then(r => r.text())
-    .then(text => {
-      // gviz wraps response in google.visualization.Query.setResponse(...)
-      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-      if (!json.table || !json.table.rows) return null;
-      // Convert to 2D array of raw values (row 0 = row 1 in sheet)
-      return json.table.rows.map(r =>
-        r.c.map(cell => (cell && cell.v !== null && cell.v !== undefined) ? cell.v : null)
-      );
+  const url = `https://docs.google.com/spreadsheets/d/${gsSheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  return fetch(url, { mode:'cors' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(csv => {
+      const rows = csv.split('\n').map(line => {
+        const result=[]; let cur=''; let inQ=false;
+        for (const ch of line) {
+          if (ch==='"') inQ=!inQ;
+          else if (ch===',' && !inQ) { result.push(parseCSVCell(cur)); cur=''; }
+          else cur+=ch;
+        }
+        result.push(parseCSVCell(cur));
+        return result;
+      });
+      return rows.length > 1 ? rows : null;
     })
-    .catch(() => null);
+    .catch(err => { console.warn(`Error fetching ${sheetName}:`, err); return null; });
 }
 
-function getSheetValue(rows, rowIdx, colIdx) {
-  // rowIdx is 1-based (sheet row number), colIdx is 0-based (gviz col index)
-  const r = rows[rowIdx - 1];
+function parseCSVCell(val) {
+  val = (val||'').trim().replace(/^"|"$/g,'');
+  if (!val) return null;
+  const n = parseFloat(val.replace(/,/g,''));
+  if (!isNaN(n)) return n;
+  return val;
+}
+
+function getVal(rows, rowNum, colIdx) {
+  const r = rows[rowNum-1];
   if (!r) return null;
-  return r[colIdx] || null;
+  const v = r[colIdx];
+  return (v !== null && v !== undefined && v !== '') ? v : null;
 }
 
-function fmtM(val) {
-  if (!val && val !== 0) return '—';
-  const n = Math.round(val / 1000); // assume values in pesos, convert to M$
-  if (Math.abs(n) >= 1000) return `$${(n/1000).toFixed(1)}B`;
-  return `$${n}M`;
+function fmtVentas(val) {
+  // val in M$ (millones de pesos)
+  if (val === null || val === undefined) return '—';
+  if (Math.abs(val) >= 1000) return `$${(val/1000).toFixed(1)}B`;
+  return `$${Math.round(val)}M`;
 }
 
-function fmtPct(val) {
-  if (!val && val !== 0) return '—';
-  return (val * 100).toFixed(1) + '%';
-}
-
-function applySheetDataToCompanies() {
+function applySheetData() {
   companies.forEach(c => {
     const rows = gsDataCache[c.name];
-    if (!rows) return;
-    const map = SHEET_ROW_MAP[c.name];
-    if (!map) return;
+    const cfg  = SHEET_CONFIG[c.name];
+    if (!rows || !cfg) return;
 
-    // For each period, read real 2026 ventas from the correct row + month col
-    const periodColMap = { ene: MONTH_COL_IDX.ene, feb: MONTH_COL_IDX.feb, mar: MONTH_COL_IDX.mar, q1: YTD_COL_IDX, ytd: YTD_COL_IDX };
+    // Check if this company has real data loaded
+    const eneReal = getVal(rows, cfg.real_ventas, COL.ene);
+    const febReal = getVal(rows, cfg.real_ventas, COL.feb);
+    const hasData = (eneReal && eneReal !== 0) || (febReal && febReal !== 0);
+
+    // If no data at all, reset to zeros so example data doesn't show
+    if (!hasData) {
+      Object.keys(c.periods).forEach(per => {
+        const p = c.periods[per];
+        p.ventas = '$0M'; p.margen = '0.0%'; p.ebitda = '0.0%';
+        p.cumplimiento = 0; p.deltaVentas = '—'; p.deltaMargen = '—';
+        p.spark = [0,0,0,0,0,0,0,0];
+        if (p.sg) p.sg = p.sg.map(s => ({...s, v:0, delta:'—', pos:true}));
+      });
+      c.headcount = 0;
+      return;
+    }
 
     Object.keys(c.periods).forEach(per => {
-      const colIdx = periodColMap[per];
-      if (colIdx === undefined) return;
+      const col = PERIOD_COL[per];
+      if (col === undefined) return;
       const p = c.periods[per];
 
-      // Ventas real 2026
-      const vReal = getSheetValue(rows, map.ventas_real, colIdx);
-      // Ventas ppto 2026
-      const vPpto = getSheetValue(rows, map.cumpl_ppto, colIdx) ||
-                    getSheetValue(rows, map.cumpl_ppto, YTD_COL_IDX);
-      // Margen bruto % real
-      const mbReal = getSheetValue(rows, map.margen_real, colIdx);
-      // EBITDA %
-      const ebitdaPct = getSheetValue(rows, map.ebitda_pct_real, colIdx);
-      // Headcount
-      const hc = getSheetValue(rows, map.headcount, colIdx) ||
-                 getSheetValue(rows, map.headcount, MONTH_COL_IDX.ene);
+      const vReal  = getVal(rows, cfg.real_ventas, col);
+      const vPpto  = (per==='q1'||per==='ytd')
+                     ? getVal(rows, cfg.ppto_ventas, COL.anual)
+                     : getVal(rows, cfg.ppto_ventas, col);
+      const vAnt   = getVal(rows, cfg.ant_ventas,  col);
+      const mbReal = getVal(rows, cfg.real_margen, col);
+      const mbAnt  = getVal(rows, cfg.ant_margen,  col);
+      const edReal = getVal(rows, cfg.real_ebitda, col);
+      const hc     = getVal(rows, cfg.headcount, COL.feb) || getVal(rows, cfg.headcount, COL.ene);
 
-      // Ventas ppto row 4 same col for cumplimiento
-      const vPptoSameCol = getSheetValue(rows, 4, colIdx);
-
-      if (vReal !== null) {
-        const vRealM = Math.round(vReal / 1000);
-        p.ventas = `$${vRealM >= 1000 ? (vRealM/1000).toFixed(1)+'B' : vRealM+'M'}`;
-      }
+      if (vReal !== null)  p.ventas = fmtVentas(vReal);
       if (mbReal !== null) p.margen = (mbReal * 100).toFixed(1) + '%';
-      if (ebitdaPct !== null) p.ebitda = (ebitdaPct * 100).toFixed(1) + '%';
-      if (hc !== null) c.headcount = Math.round(hc);
+      if (edReal !== null) p.ebitda = (edReal * 100).toFixed(1) + '%';
+      if (hc !== null)     c.headcount = Math.round(hc);
 
-      // Cumplimiento vs presupuesto
-      if (vReal !== null && vPptoSameCol) {
-        p.cumplimiento = Math.round((vReal / vPptoSameCol) * 100);
+      // Cumplimiento
+      if (vReal && vPpto && vPpto !== 0) {
+        p.cumplimiento = Math.round((vReal / vPpto) * 100);
       }
 
-      // Delta ventas vs 2025: row 30 (Typack) or equivalent
-      const ant_row = { Typack:30, Masterfibra:32, Coppelia:30, Colgram:29, 'Contempora Factoring':27, 'Contempora Leasing':27 };
-      const vAnt = getSheetValue(rows, ant_row[c.name], colIdx);
-      if (vReal !== null && vAnt) {
-        const delta = ((vReal - vAnt) / Math.abs(vAnt)) * 100;
-        p.deltaVentas = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%';
-      }
+      // Delta ventas vs 2025
+      if (vReal !== null && vAnt && vAnt !== 0) {
+        const d = ((vReal - vAnt) / Math.abs(vAnt)) * 100;
+        p.deltaVentas = (d>=0?'+':'') + d.toFixed(1) + '%';
+      } else { p.deltaVentas = '—'; }
 
       // Delta margen vs 2025
-      const mb_ant_row = { Typack:36, Masterfibra:40, Coppelia:36, Colgram:34, 'Contempora Factoring':30, 'Contempora Leasing':30 };
-      const mbAnt = getSheetValue(rows, mb_ant_row[c.name], colIdx);
       if (mbReal !== null && mbAnt !== null) {
-        const deltaMb = (mbReal - mbAnt) * 100;
-        p.deltaMargen = (deltaMb >= 0 ? '+' : '') + deltaMb.toFixed(1) + 'pp';
-      }
+        const d = (mbReal - mbAnt) * 100;
+        p.deltaMargen = (d>=0?'+':'') + d.toFixed(1) + 'pp';
+      } else { p.deltaMargen = '—'; }
 
-      // Spark — read last 8 months of real 2026 ventas (rows 56-ish, cols C-N)
+      // Spark
       if (per === currentPeriod) {
-        const sparkVals = [];
-        for (let col = MONTH_COL_IDX.ene; col <= MONTH_COL_IDX.dic; col++) {
-          const v = getSheetValue(rows, map.ventas_real, col);
-          if (v !== null && v > 0) sparkVals.push(v);
+        const raw = [];
+        for (let ci = COL.ene; ci <= COL.dic; ci++) {
+          const v = getVal(rows, cfg.real_ventas, ci);
+          raw.push(v && v > 0 ? v : 0);
         }
-        if (sparkVals.length > 0) {
-          // Normalize to 0-100 scale
-          const mx = Math.max(...sparkVals);
-          p.spark = sparkVals.map(v => Math.round((v/mx)*100));
-        }
+        const mx = Math.max(...raw);
+        if (mx > 0) p.spark = raw.map(v => Math.round((v/mx)*100));
       }
 
-      // Subgrupos — read subgroup rows if defined
-      if (c.subgruposBase && p.sg) {
-        const sgRows = {
-          Typack:        [5,6,7],
-          Masterfibra:   [61,62,63,64,65],
-          Coppelia:      [57,58,59],
-          Colgram:       [55,56],
-        };
-        const sgRowNums = sgRows[c.name];
-        if (sgRowNums) {
-          const newSg = sgRowNums.map((rn, i) => {
-            const vSg = getSheetValue(rows, rn, colIdx);
-            const vSgAnt = getSheetValue(rows, rn + (ant_row[c.name] - map.ventas_real), colIdx);
-            const oldSg = p.sg[i] || {};
-            let delta = oldSg.delta || '—';
-            if (vSg !== null && vSgAnt) {
-              const d = ((vSg - vSgAnt) / Math.abs(vSgAnt)) * 100;
-              delta = (d >= 0 ? '+' : '') + d.toFixed(1) + '%';
-            }
-            return { v: vSg !== null ? Math.round(vSg/1000) : (oldSg.v||0), delta, pos: delta.startsWith('+') };
-          });
-          p.sg = newSg;
-        }
+      // Subgrupos
+      if (c.subgruposBase && p.sg && cfg.sg_rows.length) {
+        p.sg = cfg.sg_rows.map((rn, i) => {
+          const vSg  = getVal(rows, rn, col);
+          const vAntSg = cfg.sg_ant[i] ? getVal(rows, cfg.sg_ant[i], col) : null;
+          let delta = '—'; let pos = true;
+          if (vSg !== null && vAntSg && vAntSg !== 0) {
+            const d = ((vSg - vAntSg) / Math.abs(vAntSg)) * 100;
+            delta = (d>=0?'+':'') + d.toFixed(1) + '%';
+            pos = d >= 0;
+          }
+          return { v: vSg !== null ? Math.round(vSg) : 0, delta, pos };
+        });
       }
     });
   });
 }
 
-// Auto-sync every 5 minutes if connected
+// Auto-sync every 5 minutes
 setInterval(() => { if (gsSheetId) loadAllSheets(); }, 5 * 60 * 1000);
 
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
