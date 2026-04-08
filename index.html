@@ -634,7 +634,6 @@ function getPeriodData(c) { return c.periods[currentPeriod]; }
 // HELPERS
 // ─────────────────────────────────────────────
 const pill = pct => pct>=95?`<span class="pill pill-g">${pct}%</span>`:pct>=85?`<span class="pill pill-y">${pct}%</span>`:`<span class="pill pill-r">${pct}%</span>`;
-const fmtVentas = v => { const n=parseFloat(v.replace(/[^0-9.]/g,'')); return n>=1000?`$${(n/1000).toFixed(1).replace('.',',')}B`:`$${v.replace('$','')}`; };
 
 // ─────────────────────────────────────────────
 // CONSOLIDATED SUMMARY
