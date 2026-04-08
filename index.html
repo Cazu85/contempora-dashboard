@@ -1186,25 +1186,26 @@ function applySheetData() {
       if (hc !== null)     c.headcount = Math.round(hc);
 
       // Cumplimiento
+      // Cumplimiento: real acumulado vs presupuesto acumulado de los mismos meses
+      // Detectar hasta qué mes hay datos reales cargados
+      let lastColWithData = null;
+      for (let ci = COL.ene; ci <= COL.dic; ci++) {
+        const v = getVal(rows, detectedCfg.real_ventas, ci);
+        if (v && v !== 0) lastColWithData = ci;
+      }
       let vPptoAcum = null;
-      if (per === 'q1' || per === 'ytd') {
-        vPptoAcum = toMillions(getVal(rows, detectedCfg.ppto_ventas, COL.ytd) ||
-                               getVal(rows, detectedCfg.ppto_ventas, COL.anual));
-      } else {
-        let lastCol = COL.ene;
-        for (let ci = COL.ene; ci <= COL.dic; ci++) {
-          const v = getVal(rows, detectedCfg.real_ventas, ci);
-          if (v && v !== 0) lastCol = ci;
-        }
+      if (lastColWithData !== null) {
         let sum = 0;
-        for (let ci = COL.ene; ci <= lastCol; ci++) {
+        for (let ci = COL.ene; ci <= lastColWithData; ci++) {
           const v = toMillions(getVal(rows, detectedCfg.ppto_ventas, ci));
           if (v) sum += v;
         }
         vPptoAcum = sum > 0 ? sum : null;
       }
-      if (vRealM && vPptoAcum && vPptoAcum !== 0) {
-        p.cumplimiento = Math.round((vRealM / vPptoAcum) * 100);
+      // vRealM para cumplimiento siempre usa YTD acumulado real
+      const vRealYTD = toMillions(getVal(rows, detectedCfg.real_ventas, COL.ytd));
+      if (vRealYTD && vPptoAcum && vPptoAcum !== 0) {
+        p.cumplimiento = Math.round((vRealYTD / vPptoAcum) * 100);
       }
 
       // Delta ventas vs 2025
