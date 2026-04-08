@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grupo Contempora – Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f3ef; --surface: #ffffff;
+    --border: #e5e2da; --text: #1a1916; --text-muted: #8a8780; --text-light: #b5b2aa;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .shell { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; flex-shrink: 0; background: var(--text); color: #fff; display: flex; flex-direction: column; padding: 28px 0 24px; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+  .sidebar-logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-logo span { display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+  .sidebar-logo strong { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.02em; }
+  .sidebar-nav { flex: 1; padding: 20px 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  .nav-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 14px 12px 6px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px; color: rgba(255,255,255,0.6); transition: all 0.15s; text-decoration: none; }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.1); color: #fff; font-weight: 500; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* MAIN */
+  .main { margin-left: 220px; flex: 1; padding: 32px 36px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; }
+  .header-left {}
+  .header-title { font-size: 24px; font-weight: 600; letter-spacing: -0.03em; }
+  .header-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .period-tabs { display: flex; gap: 2px; background: var(--border); padding: 3px; border-radius: 8px; }
+  .period-tab { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text-muted); border: none; background: transparent; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .period-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* PERIOD BADGE */
+  .period-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--text); color: #fff; margin-left: 10px; vertical-align: middle; letter-spacing: 0.03em; }
+
+  /* SUMMARY */
+  .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .summary-card { background: var(--surface); border-radius: var(--radius); padding: 20px 22px; border: 1px solid var(--border); transition: all 0.2s; }
+  .summary-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .summary-value { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; font-family: 'DM Mono', monospace; transition: all 0.2s; }
+  .summary-delta { font-size: 12px; margin-top: 5px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+  .delta-pos { background: #ECFDF5; color: #059669; }
+  .delta-neg { background: #FEF2F2; color: #DC2626; }
+  .delta-neu { background: #F5F5F4; color: #78716C; }
+
+  /* COMPANIES */
+  .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 14px; }
+  .company-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .company-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: box-shadow 0.18s, transform 0.18s; }
+  .company-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.09); transform: translateY(-2px); }
+  .card-top { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+  .card-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .card-name { font-size: 15px; font-weight: 600; margin-top: 6px; letter-spacing: -0.02em; }
+  .card-sector { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .card-kpis { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kpi-label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .kpi-value { font-size: 17px; font-weight: 600; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; }
+  .kpi-delta { font-size: 11px; font-weight: 500; margin-top: 1px; }
+  .pos { color: #059669; } .neg { color: #DC2626; }
+  .spark-bar { display: flex; align-items: flex-end; gap: 3px; height: 32px; margin-top: 8px; }
+  .spark-bar span { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; }
+
+  /* BOTTOM */
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 22px 24px; }
+  .panel-title { font-size: 13.5px; font-weight: 600; margin-bottom: 16px; }
+  .ranking-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .ranking-row:last-child { border-bottom: none; }
+  .rank-num { font-size: 11px; color: var(--text-light); font-family: 'DM Mono', monospace; width: 16px; }
+  .rank-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .rank-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .rank-val { font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 500; }
+  .rank-bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .rank-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .bvr-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .bvr-row:last-child { border-bottom: none; }
+  .bvr-name { font-size: 12.5px; width: 130px; flex-shrink: 0; font-weight: 500; }
+  .bvr-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .bvr-bar-wrap { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .bvr-bar-real { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .bvr-bar-bud { height: 100%; border-radius: 4px; opacity: 0.3; }
+  .bvr-pct { font-size: 11.5px; font-family: 'DM Mono', monospace; font-weight: 600; width: 38px; text-align: right; }
+  .bvr-legend { display: flex; gap: 14px; margin-bottom: 14px; }
+  .bvr-leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .bvr-leg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* GS BANNER */
+  .gs-banner { background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 28px; font-size: 13px; color: var(--text-muted); }
+  .gs-icon { font-size: 20px; }
+  .gs-text strong { color: var(--text); font-weight: 600; }
+  .gs-btn { margin-left: auto; padding: 7px 16px; border-radius: 7px; background: var(--text); color: #fff; font-size: 12px; font-weight: 500; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+  /* MODAL GS */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; width: 480px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .modal input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: 'DM Mono', monospace; outline: none; margin-bottom: 16px; color: var(--text); background: var(--bg); }
+  .modal input:focus { border-color: #2563EB; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-sec { padding: 9px 18px; border-radius: 8px; border: 1px solid var(--border); background: transparent; font-size: 13px; cursor: pointer; color: var(--text-muted); font-family: 'DM Sans', sans-serif; }
+  .btn-pri { padding: 9px 18px; border-radius: 8px; border: none; background: var(--text); color: #fff; font-size: 13px; cursor: pointer; font-weight: 500; font-family: 'DM Sans', sans-serif; }
+
+  /* DRAWER */
+  .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0); z-index: 50; pointer-events: none; transition: background 0.25s; }
+  .drawer-overlay.open { background: rgba(0,0,0,0.35); pointer-events: all; }
+  .drawer { position: fixed; top: 0; right: -760px; bottom: 0; width: 720px; background: var(--bg); z-index: 51; overflow-y: auto; transition: right 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow: -8px 0 40px rgba(0,0,0,0.12); }
+  .drawer.open { right: 0; }
+  .drawer-header { padding: 26px 32px 22px; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 2; }
+  .drawer-company-name { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; }
+  .drawer-company-meta { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .drawer-close { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
+  .drawer-close:hover { background: var(--border); }
+  .drawer-body { padding: 26px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Detail KPIs */
+  .detail-kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .detail-kpi { background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 14px 16px; }
+  .detail-kpi-label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .detail-kpi-val { font-size: 20px; font-weight: 600; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; }
+  .detail-kpi-delta { font-size: 11px; font-weight: 500; margin-top: 3px; }
+
+  /* Detail sections */
+  .detail-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px 22px; }
+  .detail-section-title { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* Bar chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 110px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar-val-label { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--text-muted); }
+  .bar-month-label { font-size: 10px; color: var(--text-light); }
+
+  /* Cost rows */
+  .cost-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .cost-row:last-child { border-bottom: none; }
+  .cost-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .cost-name { flex: 1; font-size: 13px; }
+  .cost-pct-bar { width: 90px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .cost-pct-fill { height: 100%; border-radius: 3px; }
+  .cost-pct-label { font-size: 11px; color: var(--text-muted); width: 30px; text-align: right; }
+  .cost-val { font-size: 12.5px; font-family: 'DM Mono', monospace; font-weight: 500; width: 60px; text-align: right; }
+
+  /* Indicator rows */
+  .ind-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .ind-row:last-child { border-bottom: none; }
+  .tl-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
+  .tl-green { background: #059669; } .tl-red { background: #DC2626; }
+  .ind-name { flex: 1; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; }
+  .ind-val { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; width: 90px; text-align: right; }
+  .ind-delta { font-size: 11.5px; font-weight: 500; width: 80px; text-align: right; }
+
+  /* Subgroup */
+  .sg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sg-total-label { font-size: 11px; color: var(--text-muted); }
+  .sg-total-val { font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 600; }
+  .sg-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .sg-row:last-child { border-bottom: none; }
+  .sg-name-wrap { width: 130px; flex-shrink: 0; }
+  .sg-name { font-size: 13px; font-weight: 500; }
+  .sg-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; }
+  .sg-bar-wrap { flex: 1; }
+  .sg-bar-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+  .sg-bar-fill { height: 100%; border-radius: 4px; }
+  .sg-bar-meta { display: flex; align-items: center; justify-content: space-between; }
+  .sg-pct-share { font-size: 10.5px; color: var(--text-muted); }
+  .sg-delta { font-size: 11px; font-weight: 500; }
+  .sg-val { font-size: 13.5px; font-family: 'DM Mono', monospace; font-weight: 600; width: 70px; text-align: right; flex-shrink: 0; }
+  .sg-note { font-size: 11.5px; color: var(--text-muted); font-style: italic; }
+
+  /* Monthly table */
+  .mth-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .mth-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 0 8px 10px; font-weight: 600; }
+  .mth-table th:not(:first-child) { text-align: right; }
+  .mth-table td { padding: 9px 8px; border-top: 1px solid var(--border); }
+  .mth-table td:not(:first-child) { text-align: right; font-family: 'DM Mono', monospace; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10.5px; font-weight: 600; }
+  .pill-g { background: #ECFDF5; color: #059669; }
+  .pill-y { background: #FFFBEB; color: #D97706; }
+  .pill-r { background: #FEF2F2; color: #DC2626; }
+
+  /* Fade transition for updates */
+  .fade-update { animation: fadeUp 0.25s ease; }
+  @keyframes fadeUp { from { opacity:0.4; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── COMPARATIVE VIEW ── */
+  .view-consolidado { display: block; }
+  .view-comparativa { display: none; }
+  .view-comparativa.active { display: block; }
+  .view-consolidado.hidden { display: none; }
+
+  /* Metric selector pills */
+  .metric-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .metric-pill {
+    padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text-muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  }
+  .metric-pill.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .metric-pill:hover:not(.active) { border-color: var(--text-muted); color: var(--text); }
+
+  /* Comparative table */
+  .comp-table-wrap { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 22px; }
+  .comp-table { width: 100%; border-collapse: collapse; }
+  .comp-table th { padding: 14px 18px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; background: var(--bg); }
+  .comp-table th:not(:first-child) { text-align: right; }
+  .comp-table td { padding: 0 18px; border-bottom: 1px solid var(--border); }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table .metric-row-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 18px 10px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .comp-cell { padding: 13px 18px; text-align: right; }
+  .comp-name-cell { padding: 13px 18px; display: flex; align-items: center; gap: 10px; }
+  .comp-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .comp-name { font-size: 13.5px; font-weight: 600; }
+  .comp-sector { font-size: 11px; color: var(--text-muted); }
+  .comp-val { font-size: 14px; font-family: 'DM Mono', monospace; font-weight: 600; }
+  .comp-delta-cell { font-size: 11px; font-weight: 500; }
+  .comp-bar-cell { padding: 13px 18px; text-align: right; }
+
+  /* Horizontal bar chart for comparison */
+  .hbar-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 22px 24px; margin-bottom: 22px; }
+  .hbar-title { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 18px; }
+  .hbar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .hbar-row:last-child { margin-bottom: 0; }
+  .hbar-label { width: 160px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+  .hbar-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .hbar-track { flex: 1; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; position: relative; }
+  .hbar-fill { height: 100%; border-radius: 6px; transition: width 0.45s cubic-bezier(0.4,0,0.2,1); }
+  .hbar-val { width: 80px; text-align: right; font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 600; flex-shrink: 0; }
+  .hbar-delta { width: 70px; text-align: right; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+
+  /* Spider chart canvas area */
+  .spider-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 22px 24px; margin-bottom: 22px; }
+  .spider-title { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 16px; }
+  .spider-wrap { display: flex; align-items: flex-start; gap: 32px; }
+  .spider-legend { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  .spider-leg-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; }
+  .spider-leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Comp grid - 2 charts side by side */
+  .comp-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+
+  /* ── AUTH ── */
+  .auth-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: #1a1916;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .auth-overlay.hidden { display: none; }
+  .auth-box {
+    background: #fff; border-radius: 16px;
+    width: 380px; padding: 36px 40px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  }
+  .auth-logo { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .auth-title { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+  .auth-role-tabs { display: flex; gap: 4px; background: var(--border); padding: 3px; border-radius: 8px; margin-bottom: 20px; }
+  .auth-role-tab { flex: 1; padding: 8px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; color: var(--text-muted); border: none; background: transparent; transition: all 0.15s; font-family: 'DM Sans', sans-serif; text-align: center; }
+  .auth-role-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .auth-input-wrap { position: relative; margin-bottom: 14px; }
+  .auth-input {
+    width: 100%; padding: 11px 44px 11px 14px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: 'DM Mono', monospace;
+    outline: none; color: var(--text); background: var(--bg);
+    transition: border-color 0.15s;
+  }
+  .auth-input:focus { border-color: #2563EB; }
+  .auth-input.error { border-color: #DC2626; }
+  .auth-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; color: var(--text-muted); user-select: none; }
+  .auth-btn {
+    width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: #1a1916; color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s;
+    margin-top: 4px;
+  }
+  .auth-btn:hover { opacity: 0.88; }
+  .auth-error { font-size: 12px; color: #DC2626; margin-top: 10px; text-align: center; min-height: 18px; }
+  .auth-footer { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 20px; }
+
+  /* Role badge in sidebar */
+  .role-badge {
+    margin: 0 12px 0; padding: 6px 12px; border-radius: 6px;
+    background: rgba(255,255,255,0.07); font-size: 11px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: rgba(255,255,255,0.5);
+  }
+  .role-badge strong { color: rgba(255,255,255,0.85); font-size: 11.5px; }
+  .role-badge .logout-btn { cursor: pointer; font-size: 11px; color: rgba(255,255,255,0.35); text-decoration: underline; }
+  .role-badge .logout-btn:hover { color: rgba(255,255,255,0.6); }
+
+  /* Change password modal */
+  .chpwd-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .chpwd-label { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH OVERLAY ══ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">Grupo Contempora</div>
+    <div class="auth-title">Dashboard</div>
+    <div class="auth-sub">Selecciona tu rol e ingresa la clave de acceso.</div>
+
+    <div class="auth-role-tabs">
+      <button class="auth-role-tab active" data-role="viewer" onclick="selectRole('viewer')">👁 Viewer</button>
+      <button class="auth-role-tab" data-role="admin" onclick="selectRole('admin')">⚙ Admin</button>
+    </div>
+
+    <div class="auth-input-wrap">
+      <input class="auth-input" type="password" id="authInput" placeholder="Contraseña"
+             onkeydown="if(event.key==='Enter')tryLogin()">
+      <span class="auth-eye" id="authEye" onclick="togglePwd()">👁</span>
+    </div>
+    <button class="auth-btn" onclick="tryLogin()">Ingresar</button>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-footer">Contacta al administrador si no tienes acceso.</div>
+  </div>
+</div>
+
+<!-- ══ CHANGE PASSWORD MODAL ══ -->
+<div class="modal-overlay" id="chpwdModal">
+  <div class="modal" style="width:420px">
+    <h3>Cambiar contraseñas</h3>
+    <p>Solo visible para Admins. Los cambios aplican de inmediato en esta sesión.</p>
+    <div class="chpwd-section">
+      <div class="chpwd-label">🔵 Clave Viewer (solo lectura)</div>
+      <input type="password" id="newViewerPwd" placeholder="Nueva clave Viewer" style="margin-bottom:0">
+    </div>
+    <div class="chpwd-section">
+      <div class="chpwd-label">⚙ Clave Admin (acceso total)</div>
+      <input type="password" id="newAdminPwd" placeholder="Nueva clave Admin" style="margin-bottom:0">
+    </div>
+    <div style="margin-top:16px;font-size:12px;color:var(--text-muted)">⚠ Guarda las nuevas claves antes de cerrar el navegador.</div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-sec" onclick="document.getElementById('chpwdModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-pri" onclick="savePasswords()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <span>Grupo</span>
+      <strong>Contempora</strong>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Vistas</div>
+      <a class="nav-item active" id="navConsolidado" href="#" onclick="showView('consolidado');return false;">⊞ &nbsp;Consolidado</a>
+      <a class="nav-item" id="navComparativa" href="#" onclick="showView('comparativa');return false;">⇄ &nbsp;Comparativa</a>
+      <a class="nav-item" href="#">↗ &nbsp;Ventas</a>
+      <a class="nav-item" href="#">◎ &nbsp;Márgenes</a>
+      <a class="nav-item" href="#">◈ &nbsp;Presupuesto</a>
+      <div class="nav-label">Empresas</div>
+      <a class="nav-item" href="#" onclick="openDrawer('typack');return false;"><span class="nav-dot" style="background:#2563EB"></span>Typack</a>
+      <a class="nav-item" href="#" onclick="openDrawer('masterfibra');return false;"><span class="nav-dot" style="background:#059669"></span>Masterfibra</a>
+      <a class="nav-item" href="#" onclick="openDrawer('coppelia');return false;"><span class="nav-dot" style="background:#D97706"></span>Coppelia</a>
+      <a class="nav-item" href="#" onclick="openDrawer('colgram');return false;"><span class="nav-dot" style="background:#7C3AED"></span>Colgram</a>
+      <a class="nav-item" href="#" onclick="openDrawer('factoring');return false;"><span class="nav-dot" style="background:#DC2626"></span>Factoring</a>
+      <a class="nav-item" href="#" onclick="openDrawer('leasing');return false;"><span class="nav-dot" style="background:#0891B2"></span>Leasing</a>
+      <div class="nav-label" style="margin-top:auto">Sesión</div>
+      <div class="role-badge" id="roleBadge">
+        <div><div style="font-size:10px;margin-bottom:2px">Rol activo</div><strong id="roleLabel">—</strong></div>
+        <span class="logout-btn" onclick="logout()">Salir</span>
+      </div>
+      <a class="nav-item" id="adminOnlyLink" href="#" style="display:none;color:rgba(255,255,255,0.4);font-size:12.5px" onclick="document.getElementById('chpwdModal').classList.add('open');return false;">🔑 &nbsp;Cambiar claves</a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="header">
+      <div class="header-left">
+        <div class="header-title" id="mainTitle">Dashboard Consolidado</div>
+        <div class="header-sub" id="headerSub">Datos al 31 de marzo 2025 · Fuente: Google Sheets</div>
+      </div>
+      <div class="period-tabs" id="periodTabs">
+        <button class="period-tab" data-period="ene">Ene</button>
+        <button class="period-tab" data-period="feb">Feb</button>
+        <button class="period-tab active" data-period="mar">Mar</button>
+        <button class="period-tab" data-period="q1">Q1</button>
+        <button class="period-tab" data-period="ytd">YTD</button>
+      </div>
+    </div>
+
+    <!-- ══ CONSOLIDATED VIEW ══ -->
+    <div class="view-consolidado" id="viewConsolidado">
+
+    <div class="gs-banner" id="gsBanner">
+      <span class="gs-icon">📊</span>
+      <div class="gs-text">
+        <strong>Conectar Google Sheets</strong><br>
+        Sube la plantilla a Google Drive, publícala en la web (Archivo → Publicar) y pega el ID aquí.
+        <span style="color:var(--text-light);font-size:11px;margin-left:8px">El ID está en la URL: /spreadsheets/d/<strong style="color:var(--text-muted)">[ID]</strong>/edit</span>
+      </div>
+      <button class="gs-btn" onclick="document.getElementById('modal').classList.add('open')">Conectar</button>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="summary-label">Ingresos Grupo</div>
+        <div class="summary-value" id="sumVentas">—</div>
+        <span class="summary-delta" id="sumVentasDelta">—</span>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Margen Bruto Prom.</div>
+        <div class="summary-value" id="sumMargen">—</div>
+        <span class="summary-delta" id="sumMargenDelta">—</span>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Cumplim. Presupuesto</div>
+        <div class="summary-value" id="sumCumplimiento">—</div>
+        <span class="summary-delta" id="sumCumplimientoDelta">—</span>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Headcount Total</div>
+        <div class="summary-value" id="sumHeadcount">312</div>
+        <span class="summary-delta delta-neu">= Sin variación</span>
+      </div>
+    </div>
+
+    <div class="section-title" id="sectionLabel">Empresas del Grupo · clic para ver detalle</div>
+    <div class="company-grid" id="companyGrid"></div>
+
+    <div class="bottom-row">
+      <div class="panel">
+        <div class="panel-title" id="rankingTitle">Ranking de Ventas</div>
+        <div id="rankingList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title" id="bvrTitle">Real vs Presupuesto</div>
+        <div class="bvr-legend">
+          <div class="bvr-leg-item"><div class="bvr-leg-dot" style="background:#1a1916"></div>Real</div>
+          <div class="bvr-leg-item"><div class="bvr-leg-dot" style="background:#b5b2aa"></div>Presupuesto</div>
+        </div>
+        <div id="bvrList"></div>
+      </div>
+    </div>
+
+    </div><!-- end view-consolidado -->
+
+    <!-- ══ COMPARATIVE VIEW ══ -->
+    <div class="view-comparativa" id="viewComparativa">
+
+      <!-- Metric selector -->
+      <div class="metric-selector" id="metricSelector"></div>
+
+      <!-- Horizontal bar charts: 2 per row -->
+      <div class="comp-charts-row" id="compChartsRow"></div>
+
+      <!-- Full comparison table -->
+      <div class="comp-table-wrap">
+        <table class="comp-table" id="compTable"></table>
+      </div>
+
+      <!-- Spider chart -->
+      <div class="spider-section">
+        <div class="spider-title">Perfil por empresa — radar de desempeño</div>
+        <div class="spider-wrap">
+          <canvas id="spiderCanvas" width="340" height="300"></canvas>
+          <div class="spider-legend" id="spiderLegend"></div>
+        </div>
+      </div>
+
+    </div><!-- end view-comparativa -->
+
+  </main>
+</div>
+
+<!-- GS MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Conectar Google Sheets</h3>
+    <p>Ingresa el ID de la hoja de cálculo con los datos del Grupo. Debe estar compartida con acceso de lectura.</p>
+    <input type="text" placeholder="Ej: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" id="gsId">
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="document.getElementById('modal').classList.remove('open')">Cancelar</button>
+      <button class="btn-pri" onclick="connectSheet()">Conectar hoja</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-company-name" id="drawerName"></div>
+      <div class="drawer-company-meta" id="drawerMeta"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA: each company has a `periods` map with
+// keys: 'ene','feb','mar','q1','ytd'
+// Each period: { ventas, margen, cumplimiento, ebitda,
+//               deltaVentas, deltaMargen, monthly[], subgrupos[] }
+// ─────────────────────────────────────────────
+
+const PERIOD_LABELS = {
+  ene: { label:'Enero 2026',   sub:'Datos al 31 de enero 2026',    monthly:['Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene'] },
+  feb: { label:'Febrero 2026', sub:'Datos al 28 de febrero 2026',  monthly:['Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb'] },
+  mar: { label:'Marzo 2026',   sub:'Datos al 31 de marzo 2026',    monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
+  q1:  { label:'Q1 2026',      sub:'Enero – Marzo 2026 acumulado', monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
+  ytd: { label:'YTD 2026',     sub:'Enero – Marzo 2026 (año en curso)', monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
+};
+
+const companies = [
+  {
+    id:'typack', name:'Typack', sector:'Industrial · Envases', color:'#2563EB', bg:'#EFF6FF', badge:'Industrial', headcount:78,
+    subgruposBase:[
+      {n:'Chile',   desc:'Mercado local',           shades:['#1D4ED8','#2563EB']},
+      {n:'México',  desc:'Operación internacional', shades:['#3B82F6','#60A5FA']},
+      {n:'Recipet', desc:'Reciclaje PET',           shades:['#93C5FD','#BFDBFE']},
+    ],
+    costos:[{n:'Costo de ventas',v:'$763M',pct:62,color:'#2563EB'},{n:'Remuneraciones',v:'$112M',pct:9,color:'#60A5FA'},{n:'Gastos Admin.',v:'$74M',pct:6,color:'#93C5FD'},{n:'Logística',v:'$62M',pct:5,color:'#BFDBFE'},{n:'Otros',v:'$229M',pct:18,color:'#DBEAFE'}],
+    indicadores:[{n:'EBITDA',v:'21.4%',delta:'+1.8pp',pos:true},{n:'Rotación inventario',v:'6.2x',delta:'+0.4x',pos:true},{n:'Días de cobro',v:'38 días',delta:'-3 días',pos:true},{n:'Venta / empleado',v:'$15.9M',delta:'+38%',pos:true},{n:'Costo / venta',v:'61.5%',delta:'-2.1pp',pos:true}],
+    periods:{
+      ene:{ ventas:'$310M', margen:'36.1%', ebitda:'19.2%', cumplimiento:94, deltaVentas:'+31.2%', deltaMargen:'+2.1pp', spark:[45,55,62,58,70,80,75,77], sg:[{v:185,delta:'+28%',pos:true},{v:98,delta:'+42%',pos:true},{v:27,delta:'+8%',pos:true}], monthly:[{m:'Jun',r:45,b:50},{m:'Jul',r:55,b:57},{m:'Ago',r:62,b:60},{m:'Sep',r:58,b:62},{m:'Oct',r:70,b:68},{m:'Nov',r:80,b:75},{m:'Dic',r:75,b:78},{m:'Ene',r:77,b:82}] },
+      feb:{ ventas:'$388M', margen:'37.4%', ebitda:'20.1%', cumplimiento:95, deltaVentas:'+37.6%', deltaMargen:'+2.8pp', spark:[55,62,58,70,80,75,77,95], sg:[{v:230,delta:'+33%',pos:true},{v:118,delta:'+51%',pos:true},{v:40,delta:'+9%',pos:true}], monthly:[{m:'Jul',r:55,b:57},{m:'Ago',r:62,b:60},{m:'Sep',r:58,b:62},{m:'Oct',r:70,b:68},{m:'Nov',r:80,b:75},{m:'Dic',r:75,b:78},{m:'Ene',r:77,b:82},{m:'Feb',r:95,b:100}] },
+      mar:{ ventas:'$1.240M',margen:'38.5%', ebitda:'21.4%', cumplimiento:96, deltaVentas:'+43.8%', deltaMargen:'+3.2pp', spark:[55,62,58,70,80,75,90,100],sg:[{v:620,delta:'+38.2%',pos:true},{v:480,delta:'+61.7%',pos:true},{v:140,delta:'+12%',pos:true}], monthly:[{m:'Ago',r:55,b:60},{m:'Sep',r:62,b:62},{m:'Oct',r:58,b:65},{m:'Nov',r:70,b:68},{m:'Dic',r:80,b:75},{m:'Ene',r:75,b:78},{m:'Feb',r:90,b:85},{m:'Mar',r:100,b:104}] },
+      q1: { ventas:'$3.560M',margen:'37.8%', ebitda:'20.8%', cumplimiento:95, deltaVentas:'+40.2%', deltaMargen:'+2.7pp', spark:[55,62,58,70,80,75,90,100],sg:[{v:1780,delta:'+35%',pos:true},{v:1330,delta:'+55%',pos:true},{v:450,delta:'+10%',pos:true}], monthly:[{m:'Ago',r:55,b:60},{m:'Sep',r:62,b:62},{m:'Oct',r:58,b:65},{m:'Nov',r:70,b:68},{m:'Dic',r:80,b:75},{m:'Ene',r:75,b:78},{m:'Feb',r:90,b:85},{m:'Mar',r:100,b:104}] },
+      ytd:{ ventas:'$3.560M',margen:'37.8%', ebitda:'20.8%', cumplimiento:95, deltaVentas:'+40.2%', deltaMargen:'+2.7pp', spark:[55,62,58,70,80,75,90,100],sg:[{v:1780,delta:'+35%',pos:true},{v:1330,delta:'+55%',pos:true},{v:450,delta:'+10%',pos:true}], monthly:[{m:'Ago',r:55,b:60},{m:'Sep',r:62,b:62},{m:'Oct',r:58,b:65},{m:'Nov',r:70,b:68},{m:'Dic',r:80,b:75},{m:'Ene',r:75,b:78},{m:'Feb',r:90,b:85},{m:'Mar',r:100,b:104}] },
+    }
+  },
+  {
+    id:'masterfibra', name:'Masterfibra', sector:'Industrial · Fibra', color:'#059669', bg:'#ECFDF5', badge:'Industrial', headcount:65,
+    subgruposBase:[
+      {n:'Laminado',         desc:'Planchas y láminas',      shades:['#047857','#059669']},
+      {n:'Moldeo',           desc:'Piezas moldeadas',         shades:['#059669','#10B981']},
+      {n:'Pultrusión',       desc:'Perfiles estructurales',   shades:['#10B981','#34D399']},
+      {n:'Comercialización', desc:'Venta materias primas',    shades:['#34D399','#6EE7B7']},
+      {n:'Materias Primas',  desc:'Venta de insumos',         shades:['#6EE7B7','#A7F3D0']},
+    ],
+    costos:[{n:'Costo de ventas',v:'$631M',pct:71,color:'#059669'},{n:'Remuneraciones',v:'$89M',pct:10,color:'#34D399'},{n:'Gastos Admin.',v:'$45M',pct:5,color:'#6EE7B7'},{n:'Logística',v:'$54M',pct:6,color:'#A7F3D0'},{n:'Otros',v:'$71M',pct:8,color:'#D1FAE5'}],
+    indicadores:[{n:'EBITDA',v:'15.8%',delta:'+0.9pp',pos:true},{n:'Rotación inventario',v:'4.8x',delta:'+0.3x',pos:true},{n:'Días de cobro',v:'45 días',delta:'+2 días',pos:false},{n:'Venta / empleado',v:'$13.7M',delta:'+18%',pos:true},{n:'Costo / venta',v:'70.9%',delta:'-1.2pp',pos:true}],
+    periods:{
+      ene:{ ventas:'$218M', margen:'27.4%', ebitda:'13.9%', cumplimiento:85, deltaVentas:'+14.2%', deltaMargen:'+0.8pp', spark:[35,40,48,52,55,60,68,68], sg:[{v:42,delta:'+18%',pos:true},{v:28,delta:'+12%',pos:true},{v:55,delta:'+22%',pos:true},{v:58,delta:'+8%',pos:true},{v:35,delta:'+11%',pos:true}], monthly:[{m:'Jun',r:35,b:40},{m:'Jul',r:40,b:44},{m:'Ago',r:48,b:50},{m:'Sep',r:52,b:55},{m:'Oct',r:55,b:58},{m:'Nov',r:60,b:65},{m:'Dic',r:68,b:70},{m:'Ene',r:68,b:80}] },
+      feb:{ ventas:'$294M', margen:'28.3%', ebitda:'14.8%', cumplimiento:87, deltaVentas:'+18.0%', deltaMargen:'+1.2pp', spark:[40,48,52,55,60,68,68,74], sg:[{v:58,delta:'+22%',pos:true},{v:38,delta:'+15%',pos:true},{v:74,delta:'+26%',pos:true},{v:78,delta:'+10%',pos:true},{v:46,delta:'+14%',pos:true}], monthly:[{m:'Jul',r:40,b:44},{m:'Ago',r:48,b:50},{m:'Sep',r:52,b:55},{m:'Oct',r:55,b:58},{m:'Nov',r:60,b:65},{m:'Dic',r:68,b:70},{m:'Ene',r:68,b:80},{m:'Feb',r:74,b:85}] },
+      mar:{ ventas:'$890M', margen:'29.1%', ebitda:'15.8%', cumplimiento:88, deltaVentas:'+21.3%', deltaMargen:'+1.5pp', spark:[40,48,52,55,60,68,72,80], sg:[{v:178,delta:'+24%',pos:true},{v:115,delta:'+18%',pos:true},{v:224,delta:'+28%',pos:true},{v:232,delta:'+14%',pos:true},{v:141,delta:'+16%',pos:true}], monthly:[{m:'Ago',r:40,b:45},{m:'Sep',r:48,b:50},{m:'Oct',r:52,b:55},{m:'Nov',r:55,b:58},{m:'Dic',r:60,b:65},{m:'Ene',r:68,b:70},{m:'Feb',r:72,b:75},{m:'Mar',r:80,b:91}] },
+      q1: { ventas:'$2.460M',margen:'28.7%', ebitda:'15.2%', cumplimiento:86, deltaVentas:'+19.2%', deltaMargen:'+1.2pp', spark:[40,48,52,55,60,68,72,80], sg:[{v:492,delta:'+21%',pos:true},{v:318,delta:'+15%',pos:true},{v:619,delta:'+25%',pos:true},{v:640,delta:'+11%',pos:true},{v:391,delta:'+13%',pos:true}], monthly:[{m:'Ago',r:40,b:45},{m:'Sep',r:48,b:50},{m:'Oct',r:52,b:55},{m:'Nov',r:55,b:58},{m:'Dic',r:60,b:65},{m:'Ene',r:68,b:70},{m:'Feb',r:72,b:75},{m:'Mar',r:80,b:91}] },
+      ytd:{ ventas:'$2.460M',margen:'28.7%', ebitda:'15.2%', cumplimiento:86, deltaVentas:'+19.2%', deltaMargen:'+1.2pp', spark:[40,48,52,55,60,68,72,80], sg:[{v:492,delta:'+21%',pos:true},{v:318,delta:'+15%',pos:true},{v:619,delta:'+25%',pos:true},{v:640,delta:'+11%',pos:true},{v:391,delta:'+13%',pos:true}], monthly:[{m:'Ago',r:40,b:45},{m:'Sep',r:48,b:50},{m:'Oct',r:52,b:55},{m:'Nov',r:55,b:58},{m:'Dic',r:60,b:65},{m:'Ene',r:68,b:70},{m:'Feb',r:72,b:75},{m:'Mar',r:80,b:91}] },
+    }
+  },
+  {
+    id:'coppelia', name:'Coppelia', sector:'Retail · Consumo masivo', color:'#D97706', bg:'#FFFBEB', badge:'Retail', headcount:89,
+    subgruposBase:[
+      {n:'Locales',       desc:'Tiendas propias',        shades:['#B45309','#D97706']},
+      {n:'Retail',        desc:'Cadenas de tiendas',     shades:['#F59E0B','#FBBF24']},
+      {n:'Canal Moderno', desc:'Supermercados e hiper.', shades:['#FCD34D','#FDE68A']},
+    ],
+    costos:[{n:'Costo de ventas',v:'$459M',pct:59,color:'#D97706'},{n:'Remuneraciones',v:'$117M',pct:15,color:'#FBBF24'},{n:'Gastos Admin.',v:'$47M',pct:6,color:'#FCD34D'},{n:'Logística',v:'$78M',pct:10,color:'#FDE68A'},{n:'Otros',v:'$79M',pct:10,color:'#FEF3C7'}],
+    indicadores:[{n:'EBITDA',v:'18.3%',delta:'-0.5pp',pos:false},{n:'Rotación inventario',v:'9.1x',delta:'+1.2x',pos:true},{n:'Días de cobro',v:'22 días',delta:'=',pos:true},{n:'Venta / empleado',v:'$8.8M',delta:'+7%',pos:true},{n:'Costo / venta',v:'58.8%',delta:'+0.8pp',pos:false}],
+    periods:{
+      ene:{ ventas:'$198M', margen:'40.5%', ebitda:'17.6%', cumplimiento:91, deltaVentas:'+6.1%', deltaMargen:'-1.1pp', spark:[62,70,68,72,75,71,78,78], sg:[{v:92,delta:'+4%',pos:true},{v:66,delta:'+8%',pos:true},{v:40,delta:'+10%',pos:true}], monthly:[{m:'Jun',r:62,b:65},{m:'Jul',r:70,b:70},{m:'Ago',r:68,b:70},{m:'Sep',r:72,b:74},{m:'Oct',r:75,b:76},{m:'Nov',r:71,b:78},{m:'Dic',r:78,b:79},{m:'Ene',r:78,b:86}] },
+      feb:{ ventas:'$256M', margen:'40.8%', ebitda:'17.9%', cumplimiento:93, deltaVentas:'+7.9%', deltaMargen:'-0.9pp', spark:[70,68,72,75,71,78,78,80], sg:[{v:118,delta:'+5%',pos:true},{v:85,delta:'+10%',pos:true},{v:53,delta:'+12%',pos:true}], monthly:[{m:'Jul',r:70,b:70},{m:'Ago',r:68,b:70},{m:'Sep',r:72,b:74},{m:'Oct',r:75,b:76},{m:'Nov',r:71,b:78},{m:'Dic',r:78,b:79},{m:'Ene',r:78,b:86},{m:'Feb',r:80,b:86}] },
+      mar:{ ventas:'$780M', margen:'41.2%', ebitda:'18.3%', cumplimiento:94, deltaVentas:'+9.7%', deltaMargen:'-0.8pp', spark:[70,68,72,75,71,78,80,82], sg:[{v:360,delta:'+6.2%',pos:true},{v:255,delta:'+11.8%',pos:true},{v:165,delta:'+14.6%',pos:true}], monthly:[{m:'Ago',r:70,b:68},{m:'Sep',r:68,b:72},{m:'Oct',r:72,b:74},{m:'Nov',r:75,b:76},{m:'Dic',r:71,b:78},{m:'Ene',r:78,b:79},{m:'Feb',r:80,b:81},{m:'Mar',r:82,b:87}] },
+      q1: { ventas:'$2.180M',margen:'40.9%', ebitda:'18.0%', cumplimiento:93, deltaVentas:'+8.8%', deltaMargen:'-1.0pp', spark:[70,68,72,75,71,78,80,82], sg:[{v:1010,delta:'+5%',pos:true},{v:718,delta:'+10%',pos:true},{v:452,delta:'+13%',pos:true}], monthly:[{m:'Ago',r:70,b:68},{m:'Sep',r:68,b:72},{m:'Oct',r:72,b:74},{m:'Nov',r:75,b:76},{m:'Dic',r:71,b:78},{m:'Ene',r:78,b:79},{m:'Feb',r:80,b:81},{m:'Mar',r:82,b:87}] },
+      ytd:{ ventas:'$2.180M',margen:'40.9%', ebitda:'18.0%', cumplimiento:93, deltaVentas:'+8.8%', deltaMargen:'-1.0pp', spark:[70,68,72,75,71,78,80,82], sg:[{v:1010,delta:'+5%',pos:true},{v:718,delta:'+10%',pos:true},{v:452,delta:'+13%',pos:true}], monthly:[{m:'Ago',r:70,b:68},{m:'Sep',r:68,b:72},{m:'Oct',r:72,b:74},{m:'Nov',r:75,b:76},{m:'Dic',r:71,b:78},{m:'Ene',r:78,b:79},{m:'Feb',r:80,b:81},{m:'Mar',r:82,b:87}] },
+    }
+  },
+  {
+    id:'colgram', name:'Colgram', sector:'Retail · Distribución', color:'#7C3AED', bg:'#F5F3FF', badge:'Retail', headcount:34,
+    subgruposBase:[
+      {n:'Colloky', desc:'Calzado y ropa infantil', shades:['#6D28D9','#7C3AED']},
+      {n:'Opaline', desc:'Ropa y accesorios bebé',  shades:['#A78BFA','#C4B5FD']},
+    ],
+    costos:[{n:'Costo de ventas',v:'$308M',pct:73,color:'#7C3AED'},{n:'Remuneraciones',v:'$42M',pct:10,color:'#A78BFA'},{n:'Gastos Admin.',v:'$21M',pct:5,color:'#C4B5FD'},{n:'Logística',v:'$25M',pct:6,color:'#DDD6FE'},{n:'Otros',v:'$24M',pct:6,color:'#EDE9FE'}],
+    indicadores:[{n:'EBITDA',v:'11.2%',delta:'+0.3pp',pos:true},{n:'Rotación inventario',v:'5.5x',delta:'-0.2x',pos:false},{n:'Días de cobro',v:'52 días',delta:'+4 días',pos:false},{n:'Venta / empleado',v:'$12.4M',delta:'+4%',pos:true},{n:'Costo / venta',v:'73.2%',delta:'-0.4pp',pos:true}],
+    periods:{
+      ene:{ ventas:'$98M',  margen:'25.5%', ebitda:'10.4%', cumplimiento:78, deltaVentas:'+2.1%', deltaMargen:'+0.2pp', spark:[22,30,35,33,38,40,39,38], sg:[{v:67,delta:'+3%',pos:true},{v:31,delta:'+0.4%',pos:true}], monthly:[{m:'Jun',r:22,b:28},{m:'Jul',r:30,b:32},{m:'Ago',r:35,b:36},{m:'Sep',r:33,b:38},{m:'Oct',r:38,b:42},{m:'Nov',r:40,b:44},{m:'Dic',r:39,b:46},{m:'Ene',r:38,b:49}] },
+      feb:{ ventas:'$142M', margen:'26.2%', ebitda:'10.8%', cumplimiento:80, deltaVentas:'+3.7%', deltaMargen:'+0.3pp', spark:[30,35,33,38,40,39,38,44], sg:[{v:97,delta:'+5%',pos:true},{v:45,delta:'+0.8%',pos:true}], monthly:[{m:'Jul',r:30,b:32},{m:'Ago',r:35,b:36},{m:'Sep',r:33,b:38},{m:'Oct',r:38,b:42},{m:'Nov',r:40,b:44},{m:'Dic',r:39,b:46},{m:'Ene',r:38,b:49},{m:'Feb',r:44,b:55}] },
+      mar:{ ventas:'$420M', margen:'26.8%', ebitda:'11.2%', cumplimiento:82, deltaVentas:'+5.2%', deltaMargen:'+0.4pp', spark:[30,35,33,38,40,39,44,48], sg:[{v:285,delta:'+7.1%',pos:true},{v:135,delta:'+1.5%',pos:true}], monthly:[{m:'Ago',r:30,b:36},{m:'Sep',r:35,b:38},{m:'Oct',r:33,b:40},{m:'Nov',r:38,b:42},{m:'Dic',r:40,b:44},{m:'Ene',r:39,b:46},{m:'Feb',r:44,b:48},{m:'Mar',r:48,b:59}] },
+      q1: { ventas:'$1.210M',margen:'26.5%', ebitda:'10.9%', cumplimiento:80, deltaVentas:'+4.1%', deltaMargen:'+0.3pp', spark:[30,35,33,38,40,39,44,48], sg:[{v:820,delta:'+5%',pos:true},{v:390,delta:'+1.1%',pos:true}], monthly:[{m:'Ago',r:30,b:36},{m:'Sep',r:35,b:38},{m:'Oct',r:33,b:40},{m:'Nov',r:38,b:42},{m:'Dic',r:40,b:44},{m:'Ene',r:39,b:46},{m:'Feb',r:44,b:48},{m:'Mar',r:48,b:59}] },
+      ytd:{ ventas:'$1.210M',margen:'26.5%', ebitda:'10.9%', cumplimiento:80, deltaVentas:'+4.1%', deltaMargen:'+0.3pp', spark:[30,35,33,38,40,39,44,48], sg:[{v:820,delta:'+5%',pos:true},{v:390,delta:'+1.1%',pos:true}], monthly:[{m:'Ago',r:30,b:36},{m:'Sep',r:35,b:38},{m:'Oct',r:33,b:40},{m:'Nov',r:38,b:42},{m:'Dic',r:40,b:44},{m:'Ene',r:39,b:46},{m:'Feb',r:44,b:48},{m:'Mar',r:48,b:59}] },
+    }
+  },
+  {
+    id:'factoring', name:'Contempora Factoring', sector:'Financiero · Factoring', color:'#DC2626', bg:'#FEF2F2', badge:'Financiero', headcount:28,
+    subgruposBase: null,
+    subgruposNota: 'Empresa de ingresos financieros consolidados. No aplica desglose por tipo de venta.',
+    costos:[{n:'Costo de fondos',v:'$310M',pct:50,color:'#DC2626'},{n:'Remuneraciones',v:'$56M',pct:9,color:'#F87171'},{n:'Provisiones',v:'$74M',pct:12,color:'#FCA5A5'},{n:'Gastos Admin.',v:'$31M',pct:5,color:'#FECACA'},{n:'Otros',v:'$149M',pct:24,color:'#FEE2E2'}],
+    indicadores:[{n:'EBITDA',v:'28.1%',delta:'+2.4pp',pos:true},{n:'Mora +90 días',v:'1.8%',delta:'-0.3pp',pos:true},{n:'Cartera vigente',v:'$4.200M',delta:'+12%',pos:true},{n:'Venta / empleado',v:'$22.1M',delta:'+10%',pos:true},{n:'Spread neto',v:'8.4%',delta:'+0.7pp',pos:true}],
+    periods:{
+      ene:{ ventas:'$148M', margen:'29.8%', ebitda:'26.2%', cumplimiento:88, deltaVentas:'+9.8%', deltaMargen:'+1.4pp', spark:[42,50,54,56,60,65,70,72], sg:null, monthly:[{m:'Jun',r:42,b:44},{m:'Jul',r:50,b:52},{m:'Ago',r:54,b:54},{m:'Sep',r:56,b:58},{m:'Oct',r:60,b:62},{m:'Nov',r:65,b:66},{m:'Dic',r:70,b:68},{m:'Ene',r:72,b:82}] },
+      feb:{ ventas:'$212M', margen:'30.6%', ebitda:'27.1%', cumplimiento:90, deltaVentas:'+12.2%', deltaMargen:'+1.8pp', spark:[50,54,56,60,65,70,72,70], sg:null, monthly:[{m:'Jul',r:50,b:52},{m:'Ago',r:54,b:54},{m:'Sep',r:56,b:58},{m:'Oct',r:60,b:62},{m:'Nov',r:65,b:66},{m:'Dic',r:70,b:68},{m:'Ene',r:72,b:82},{m:'Feb',r:70,b:78}] },
+      mar:{ ventas:'$620M', margen:'31.4%', ebitda:'28.1%', cumplimiento:91, deltaVentas:'+14.6%', deltaMargen:'+2.0pp', spark:[50,54,56,60,65,70,72,78], sg:null, monthly:[{m:'Ago',r:50,b:52},{m:'Sep',r:54,b:56},{m:'Oct',r:56,b:58},{m:'Nov',r:60,b:62},{m:'Dic',r:65,b:66},{m:'Ene',r:70,b:68},{m:'Feb',r:72,b:70},{m:'Mar',r:78,b:86}] },
+      q1: { ventas:'$1.800M',margen:'31.1%', ebitda:'27.8%', cumplimiento:90, deltaVentas:'+13.1%', deltaMargen:'+1.7pp', spark:[50,54,56,60,65,70,72,78], sg:null, monthly:[{m:'Ago',r:50,b:52},{m:'Sep',r:54,b:56},{m:'Oct',r:56,b:58},{m:'Nov',r:60,b:62},{m:'Dic',r:65,b:66},{m:'Ene',r:70,b:68},{m:'Feb',r:72,b:70},{m:'Mar',r:78,b:86}] },
+      ytd:{ ventas:'$1.800M',margen:'31.1%', ebitda:'27.8%', cumplimiento:90, deltaVentas:'+13.1%', deltaMargen:'+1.7pp', spark:[50,54,56,60,65,70,72,78], sg:null, monthly:[{m:'Ago',r:50,b:52},{m:'Sep',r:54,b:56},{m:'Oct',r:56,b:58},{m:'Nov',r:60,b:62},{m:'Dic',r:65,b:66},{m:'Ene',r:70,b:68},{m:'Feb',r:72,b:70},{m:'Mar',r:78,b:86}] },
+    }
+  },
+  {
+    id:'leasing', name:'Contempora Leasing', sector:'Financiero · Leasing', color:'#0891B2', bg:'#F0F9FF', badge:'Financiero', headcount:18,
+    subgruposBase: null,
+    subgruposNota: 'Empresa de ingresos financieros consolidados. No aplica desglose por tipo de venta.',
+    costos:[{n:'Costo de fondos',v:'$115M',pct:35,color:'#0891B2'},{n:'Depreciación activos',v:'$68M',pct:21,color:'#22D3EE'},{n:'Remuneraciones',v:'$39M',pct:12,color:'#67E8F9'},{n:'Gastos Admin.',v:'$26M',pct:8,color:'#A5F3FC'},{n:'Otros',v:'$82M',pct:24,color:'#CFFAFE'}],
+    indicadores:[{n:'EBITDA',v:'38.2%',delta:'+1.5pp',pos:true},{n:'Mora +90 días',v:'0.9%',delta:'-0.1pp',pos:true},{n:'Cartera vigente',v:'$2.800M',delta:'+8%',pos:true},{n:'Venta / empleado',v:'$18.3M',delta:'+5%',pos:true},{n:'Spread neto',v:'12.1%',delta:'+0.8pp',pos:true}],
+    periods:{
+      ene:{ ventas:'$78M',  margen:'43.1%', ebitda:'36.4%', cumplimiento:84, deltaVentas:'+4.0%', deltaMargen:'+0.7pp', spark:[20,25,28,30,32,35,36,36], sg:null, monthly:[{m:'Jun',r:20,b:23},{m:'Jul',r:25,b:27},{m:'Ago',r:28,b:30},{m:'Sep',r:30,b:32},{m:'Oct',r:32,b:34},{m:'Nov',r:35,b:36},{m:'Dic',r:36,b:37},{m:'Ene',r:36,b:43}] },
+      feb:{ ventas:'$116M', margen:'44.0%', ebitda:'37.4%', cumplimiento:86, deltaVentas:'+5.6%', deltaMargen:'+0.9pp', spark:[25,28,30,32,35,36,36,38], sg:null, monthly:[{m:'Jul',r:25,b:27},{m:'Ago',r:28,b:30},{m:'Sep',r:30,b:32},{m:'Oct',r:32,b:34},{m:'Nov',r:35,b:36},{m:'Dic',r:36,b:37},{m:'Ene',r:36,b:43},{m:'Feb',r:38,b:44}] },
+      mar:{ ventas:'$330M', margen:'44.7%', ebitda:'38.2%', cumplimiento:87, deltaVentas:'+7.1%', deltaMargen:'+1.1pp', spark:[25,28,30,32,35,36,38,42], sg:null, monthly:[{m:'Ago',r:25,b:28},{m:'Sep',r:28,b:30},{m:'Oct',r:30,b:32},{m:'Nov',r:32,b:34},{m:'Dic',r:35,b:36},{m:'Ene',r:36,b:37},{m:'Feb',r:38,b:39},{m:'Mar',r:42,b:48}] },
+      q1: { ventas:'$960M', margen:'44.4%', ebitda:'37.9%', cumplimiento:86, deltaVentas:'+6.2%', deltaMargen:'+0.9pp', spark:[25,28,30,32,35,36,38,42], sg:null, monthly:[{m:'Ago',r:25,b:28},{m:'Sep',r:28,b:30},{m:'Oct',r:30,b:32},{m:'Nov',r:32,b:34},{m:'Dic',r:35,b:36},{m:'Ene',r:36,b:37},{m:'Feb',r:38,b:39},{m:'Mar',r:42,b:48}] },
+      ytd:{ ventas:'$960M', margen:'44.4%', ebitda:'37.9%', cumplimiento:86, deltaVentas:'+6.2%', deltaMargen:'+0.9pp', spark:[25,28,30,32,35,36,38,42], sg:null, monthly:[{m:'Ago',r:25,b:28},{m:'Sep',r:28,b:30},{m:'Oct',r:30,b:32},{m:'Nov',r:32,b:34},{m:'Dic',r:35,b:36},{m:'Ene',r:36,b:37},{m:'Feb',r:38,b:39},{m:'Mar',r:42,b:48}] },
+    }
+  }
+];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let currentPeriod = 'mar';
+let openDrawerId   = null;
+
+function getPeriodData(c) { return c.periods[currentPeriod]; }
+
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+const pill = pct => pct>=95?`<span class="pill pill-g">${pct}%</span>`:pct>=85?`<span class="pill pill-y">${pct}%</span>`:`<span class="pill pill-r">${pct}%</span>`;
+const fmtVentas = v => { const n=parseFloat(v.replace(/[^0-9.]/g,'')); return n>=1000?`$${(n/1000).toFixed(1).replace('.',',')}B`:`$${v.replace('$','')}`; };
+
+// ─────────────────────────────────────────────
+// CONSOLIDATED SUMMARY
+// ─────────────────────────────────────────────
+function updateSummary() {
+  const pl = PERIOD_LABELS[currentPeriod];
+  document.getElementById('headerSub').textContent = `${pl.sub} · Fuente: Google Sheets`;
+  document.getElementById('rankingTitle').textContent  = `Ranking de Ventas — ${pl.label}`;
+  document.getElementById('bvrTitle').textContent      = `Real vs Presupuesto — ${pl.label}`;
+  document.getElementById('sectionLabel').textContent  = `Empresas del Grupo — ${pl.label} · clic para ver detalle`;
+
+  // Aggregate ventas (parse raw number from string like '$1.240M' or '$3.560M')
+  const parseM = s => { const n=parseFloat(s.replace(/[$M]/g,'').replace(/\./g,'').replace(',','.')); return isNaN(n)?0:n; };
+  let totalV=0, totalCumpl=0, totalMargen=0;
+  companies.forEach(c=>{
+    const p=getPeriodData(c);
+    totalV      += parseM(p.ventas);
+    totalCumpl  += p.cumplimiento;
+    totalMargen += parseFloat(p.margen);
+  });
+  const avgCumpl  = Math.round(totalCumpl/companies.length);
+  const avgMargen = (totalMargen/companies.length).toFixed(1);
+  const totalVStr = totalV>=1000?`$${(totalV/1000).toFixed(1).replace('.',',')}B`:`$${totalV}M`;
+
+  animSet('sumVentas', totalVStr);
+  animSet('sumMargen', avgMargen+'%');
+  animSet('sumCumplimiento', avgCumpl+'%');
+
+  const vDelta = currentPeriod==='ene'?'+14.8%':currentPeriod==='feb'?'+19.2%':currentPeriod==='mar'?'+18.4%':'+17.8%';
+  const mDelta = currentPeriod==='ene'?'+1.2pp':currentPeriod==='feb'?'+1.7pp':currentPeriod==='mar'?'+2.1pp':'+1.7pp';
+  const cDelta = avgCumpl>=90?`↑ ${100-avgCumpl}pp bajo meta`:`↓ ${100-avgCumpl}pp bajo meta`;
+
+  setDelta('sumVentasDelta', `↑ ${vDelta} vs 2025`, true);
+  setDelta('sumMargenDelta', `↑ ${mDelta} vs 2025`, true);
+  setDelta('sumCumplimientoDelta', cDelta, avgCumpl>=90);
+}
+
+function animSet(id, val) {
+  const el = document.getElementById(id);
+  el.classList.remove('fade-update');
+  void el.offsetWidth;
+  el.textContent = val;
+  el.classList.add('fade-update');
+}
+
+function setDelta(id, text, pos) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `summary-delta ${pos?'delta-pos':'delta-neg'}`;
+}
+
+// ─────────────────────────────────────────────
+// COMPANY CARDS
+// ─────────────────────────────────────────────
+function buildCompanyCards() {
+  const grid = document.getElementById('companyGrid');
+  grid.innerHTML = '';
+  companies.forEach(c => {
+    const p = getPeriodData(c);
+    const posM = p.deltaMargen.startsWith('+'), posV = p.deltaVentas.startsWith('+');
+    const sMax = Math.max(...p.spark);
+    const sparks = p.spark.map(v=>`<span style="height:${Math.round((v/sMax)*28)}px;background:${c.color};opacity:0.75"></span>`).join('');
+    const el = document.createElement('div');
+    el.className = 'company-card fade-update';
+    el.innerHTML = `
+      <div class="card-top" style="background:${c.bg}">
+        <div>
+          <span class="card-badge" style="background:${c.color}20;color:${c.color}">${c.badge}</span>
+          <div class="card-name">${c.name}</div>
+          <div class="card-sector">${c.sector}</div>
+        </div>
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:${p.cumplimiento>=90?'#059669':p.cumplimiento>=80?'#D97706':'#DC2626'};font-weight:600;background:${p.cumplimiento>=90?'#ECFDF5':p.cumplimiento>=80?'#FFFBEB':'#FEF2F2'};padding:4px 9px;border-radius:20px">${p.cumplimiento}% ppto</div>
+      </div>
+      <div class="card-kpis">
+        <div><div class="kpi-label">Ventas</div><div class="kpi-value">${p.ventas}</div><div class="kpi-delta ${posV?'pos':'neg'}">${p.deltaVentas} vs 2025</div></div>
+        <div><div class="kpi-label">Margen</div><div class="kpi-value">${p.margen}</div><div class="kpi-delta ${posM?'pos':'neg'}">${p.deltaMargen} vs 2025</div></div>
+        <div style="grid-column:1/-1"><div class="kpi-label">Tendencia ventas (8 meses)</div><div class="spark-bar">${sparks}</div></div>
+      </div>`;
+    el.addEventListener('click', () => openDrawer(c.id));
+    grid.appendChild(el);
+  });
+}
+
+// ─────────────────────────────────────────────
+// RANKING
+// ─────────────────────────────────────────────
+function buildRanking() {
+  const parseM = s => parseFloat(s.replace(/[$MBK,\.]/g,'').replace(',','.'))||0;
+  const sorted = [...companies].sort((a,b)=>parseM(getPeriodData(b).ventas)-parseM(getPeriodData(a).ventas));
+  const maxV = parseM(getPeriodData(sorted[0]).ventas);
+  const list = document.getElementById('rankingList');
+  list.innerHTML = '';
+  sorted.forEach((c,i)=>{
+    const v=getPeriodData(c).ventas;
+    const pct = Math.round((parseM(v)/maxV)*100);
+    list.innerHTML += `<div class="ranking-row"><div class="rank-num">${i+1}</div><div class="rank-color" style="background:${c.color}"></div><div class="rank-name">${c.name.replace('Contempora ','')}</div><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${pct}%;background:${c.color}"></div></div><div class="rank-val">${v}</div></div>`;
+  });
+}
+
+// ─────────────────────────────────────────────
+// BVR
+// ─────────────────────────────────────────────
+function buildBVR() {
+  const list = document.getElementById('bvrList');
+  list.innerHTML = '';
+  companies.forEach(c=>{
+    const p=getPeriodData(c), pct=p.cumplimiento, col=pct>=90?'#059669':pct>=80?'#D97706':'#DC2626';
+    list.innerHTML += `<div class="bvr-row"><div class="bvr-name">${c.name.replace('Contempora ','')}</div><div class="bvr-bars"><div class="bvr-bar-wrap"><div class="bvr-bar-real" style="width:${pct}%;background:${c.color}"></div></div><div class="bvr-bar-wrap"><div class="bvr-bar-bud" style="width:100%;background:${c.color}"></div></div></div><div class="bvr-pct" style="color:${col}">${pct}%</div></div>`;
+  });
+}
+
+// ─────────────────────────────────────────────
+// DRAWER
+// ─────────────────────────────────────────────
+function openDrawer(id) {
+  openDrawerId = id;
+  const c = companies.find(x=>x.id===id);
+  if (!c) return;
+  const p = getPeriodData(c);
+
+  document.getElementById('drawerName').textContent = c.name;
+  document.getElementById('drawerName').style.color = c.color;
+  document.getElementById('drawerMeta').textContent = `${c.sector} · ${c.headcount} colaboradores · ${PERIOD_LABELS[currentPeriod].label}`;
+
+  const maxM = Math.max(...p.monthly.map(x=>Math.max(x.r,x.b)));
+
+  const barCols = p.monthly.map(m=>{
+    const rH=Math.round((m.r/maxM)*96), bH=Math.round((m.b/maxM)*96);
+    return `<div class="bar-col">
+      <div class="bar-val-label">$${m.r}M</div>
+      <div style="width:100%;position:relative;height:${Math.max(rH,bH)}px">
+        <div style="position:absolute;bottom:0;left:0;right:0;height:${bH}px;border:2px dashed ${c.color};border-radius:4px 4px 0 0;opacity:0.3"></div>
+        <div style="position:absolute;bottom:0;left:2px;right:2px;height:${rH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.85"></div>
+      </div>
+      <div class="bar-month-label">${m.m}</div>
+    </div>`;
+  }).join('');
+
+  const mthRows = p.monthly.map(m=>{
+    const cumpl=Math.round((m.r/m.b)*100), diff=m.r-m.b;
+    return `<tr><td>${m.m}</td><td>$${m.r}M</td><td>$${m.b}M</td><td>${pill(cumpl)}</td><td class="${diff>=0?'pos':'neg'}" style="font-family:'DM Mono',monospace;font-size:12px">${diff>=0?'+':'-'}$${Math.abs(diff)}M</td></tr>`;
+  }).join('');
+
+  const costRows = c.costos.map(x=>`
+    <div class="cost-row">
+      <div class="cost-dot" style="background:${x.color}"></div>
+      <div class="cost-name">${x.n}</div>
+      <div class="cost-pct-bar"><div class="cost-pct-fill" style="width:${x.pct}%;background:${x.color}"></div></div>
+      <div class="cost-pct-label">${x.pct}%</div>
+      <div class="cost-val">${x.v}</div>
+    </div>`).join('');
+
+  const indRows = c.indicadores.map(x=>`
+    <div class="ind-row">
+      <div class="ind-name"><span class="tl-dot ${x.pos?'tl-green':'tl-red'}"></span>${x.n}</div>
+      <div class="ind-val">${x.v}</div>
+      <div class="ind-delta ${x.pos?'pos':'neg'}">${x.delta}</div>
+    </div>`).join('');
+
+  const cumplColor = p.cumplimiento>=90?'#059669':p.cumplimiento>=80?'#D97706':'#DC2626';
+  const cumplLabel = p.cumplimiento>=90?'✓ En meta':p.cumplimiento>=80?'~ Cercano':'✗ Bajo meta';
+
+  // Subgrupos
+  let sgHTML = '';
+  const sgBase = c.subgruposBase;
+  const sgData = p.sg;
+  if (sgBase && sgData) {
+    const total = sgData.reduce((a,s)=>a+s.v,0);
+    const maxSg  = Math.max(...sgData.map(s=>s.v));
+    const sgRows = sgBase.map((b,i)=>{
+      const s=sgData[i], share=Math.round((s.v/total)*100), barW=Math.round((s.v/maxSg)*100);
+      return `<div class="sg-row">
+        <div class="sg-name-wrap"><div class="sg-name">${b.n}</div><div class="sg-sub">${b.desc}</div></div>
+        <div class="sg-bar-wrap">
+          <div class="sg-bar-track"><div class="sg-bar-fill" style="width:${barW}%;background:${b.shades[0]}"></div></div>
+          <div class="sg-bar-meta">
+            <span class="sg-pct-share">${share}% del total</span>
+            <span class="sg-delta ${s.pos?'pos':'neg'}">${s.delta} vs 2025</span>
+          </div>
+        </div>
+        <div class="sg-val">$${s.v}M</div>
+      </div>`;
+    }).join('');
+    sgHTML = `<div class="detail-section">
+      <div class="sg-header">
+        <div class="detail-section-title" style="margin-bottom:0">Desglose por tipo de venta</div>
+        <div style="text-align:right"><div class="sg-total-label">Total ventas</div><div class="sg-total-val">$${total}M</div></div>
+      </div>${sgRows}</div>`;
+  } else if (c.subgruposNota) {
+    sgHTML = `<div class="detail-section" style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:20px">💡</div>
+      <div class="sg-note">${c.subgruposNota}</div>
+    </div>`;
+  }
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="detail-kpi-strip">
+      <div class="detail-kpi">
+        <div class="detail-kpi-label">Ventas</div>
+        <div class="detail-kpi-val" style="color:${c.color}">${p.ventas}</div>
+        <div class="detail-kpi-delta ${p.deltaVentas.startsWith('+')?'pos':'neg'}">${p.deltaVentas} vs 2025</div>
+      </div>
+      <div class="detail-kpi">
+        <div class="detail-kpi-label">Margen Bruto</div>
+        <div class="detail-kpi-val">${p.margen}</div>
+        <div class="detail-kpi-delta ${p.deltaMargen.startsWith('+')?'pos':'neg'}">${p.deltaMargen} vs 2025</div>
+      </div>
+      <div class="detail-kpi">
+        <div class="detail-kpi-label">EBITDA</div>
+        <div class="detail-kpi-val">${p.ebitda}</div>
+        <div class="detail-kpi-delta pos">▲ Sobre benchmark</div>
+      </div>
+      <div class="detail-kpi">
+        <div class="detail-kpi-label">% Presupuesto</div>
+        <div class="detail-kpi-val" style="color:${cumplColor}">${p.cumplimiento}%</div>
+        <div class="detail-kpi-delta" style="color:${cumplColor}">${cumplLabel}</div>
+      </div>
+    </div>
+
+    ${sgHTML}
+
+    <div class="detail-section">
+      <div class="detail-section-title">Ventas mensuales — Real vs Presupuesto</div>
+      <div class="bar-chart">${barCols}</div>
+      <div style="display:flex;gap:16px;margin-top:10px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)"><div style="width:12px;height:12px;background:${c.color};border-radius:3px;opacity:0.85"></div>Real</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)"><div style="width:14px;height:0;border-top:2px dashed ${c.color};opacity:0.4"></div>Presupuesto</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Detalle mensual</div>
+      <table class="mth-table">
+        <thead><tr><th>Mes</th><th>Real</th><th>Presupuesto</th><th>Cumplim.</th><th>Diferencia</th></tr></thead>
+        <tbody>${mthRows}</tbody>
+      </table>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Estructura de costos</div>
+      ${costRows}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Indicadores de gestión</div>
+      ${indRows}
+    </div>
+  `;
+
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  openDrawerId = null;
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────
+// PERIOD SWITCH — refreshes everything
+// ─────────────────────────────────────────────
+function setPeriod(p) {
+  currentPeriod = p;
+  updateSummary();
+  buildCompanyCards();
+  buildRanking();
+  buildBVR();
+  // If drawer is open, refresh it with new period data
+  if (openDrawerId) openDrawer(openDrawerId);
+}
+
+// ─────────────────────────────────────────────
+// PERIOD TAB CLICKS
+// ─────────────────────────────────────────────
+document.querySelectorAll('.period-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.period-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    setPeriod(btn.dataset.period);
+  });
+});
+
+// ─────────────────────────────────────────────
+// GOOGLE SHEETS INTEGRATION
+// ─────────────────────────────────────────────
+
+// Row map per sheet: which row number holds each key value (1-indexed)
+// Based on actual template structure read from the file
+const SHEET_ROW_MAP = {
+  Typack:               { ventas_real:56, margen_real:62, ebitda_real:68, ebitda_pct_real:69, cumpl_ppto:4,  cumpl_real:56, headcount:98 },
+  Masterfibra:          { ventas_real:60, margen_real:68, ebitda_real:74, ebitda_pct_real:75, cumpl_ppto:4,  cumpl_real:60, headcount:104},
+  Coppelia:             { ventas_real:56, margen_real:62, ebitda_real:68, ebitda_pct_real:69, cumpl_ppto:4,  cumpl_real:56, headcount:98 },
+  Colgram:              { ventas_real:54, margen_real:59, ebitda_real:65, ebitda_pct_real:66, cumpl_ppto:4,  cumpl_real:54, headcount:95 },
+  'Contempora Factoring':{ ventas_real:50, margen_real:53, ebitda_real:59, ebitda_pct_real:60, cumpl_ppto:4, cumpl_real:50, headcount:88 },
+  'Contempora Leasing': { ventas_real:50, margen_real:53, ebitda_real:59, ebitda_pct_real:60, cumpl_ppto:4,  cumpl_real:50, headcount:88 },
+};
+
+// Month columns: C=2, D=3 ... N=13 (0-indexed in gviz response cols)
+// Col A=0(label), B=1(anual), C=2(Ene)...N=13(Dic), O=14(YTD)
+const MONTH_COL_IDX = { ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, sep:10, oct:11, nov:12, dic:13 };
+const YTD_COL_IDX = 14;
+
+let gsSheetId = null;
+let gsDataCache = {}; // { sheetName: rows[][] }
+
+function connectSheet() {
+  const id = document.getElementById('gsId').value.trim();
+  if (!id) return;
+  gsSheetId = id;
+  document.getElementById('modal').classList.remove('open');
+  updateGSBanner('Conectando…', '🔄');
+  loadAllSheets();
+}
+
+function updateGSBanner(msg, icon='✅') {
+  const btn = currentRole === 'admin'
+    ? `<button class="gs-btn" onclick="document.getElementById('modal').classList.add('open')">Cambiar</button>`
+    : '';
+  document.getElementById('gsBanner').innerHTML =
+    `<span class="gs-icon">${icon}</span><div class="gs-text"><strong>Google Sheets</strong><br>${msg}</div>${btn}`;
+}
+
+function loadAllSheets() {
+  const sheetNames = ['Typack','Masterfibra','Coppelia','Colgram','Contempora Factoring','Contempora Leasing'];
+  const promises = sheetNames.map(name => fetchSheet(name));
+  Promise.all(promises).then(results => {
+    results.forEach((rows, i) => { if (rows) gsDataCache[sheetNames[i]] = rows; });
+    const loaded = results.filter(Boolean).length;
+    if (loaded > 0) {
+      updateGSBanner(`${loaded} de ${sheetNames.length} hojas cargadas · Última sync: ${new Date().toLocaleTimeString('es-CL')}`);
+      applySheetDataToCompanies();
+      setPeriod(currentPeriod);
+    } else {
+      updateGSBanner('Error al leer la hoja. Verifica que esté compartida públicamente.', '❌');
+    }
+  });
+}
+
+function fetchSheet(sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${gsSheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  return fetch(url)
+    .then(r => r.text())
+    .then(text => {
+      // gviz wraps response in google.visualization.Query.setResponse(...)
+      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+      if (!json.table || !json.table.rows) return null;
+      // Convert to 2D array of raw values (row 0 = row 1 in sheet)
+      return json.table.rows.map(r =>
+        r.c.map(cell => (cell && cell.v !== null && cell.v !== undefined) ? cell.v : null)
+      );
+    })
+    .catch(() => null);
+}
+
+function getSheetValue(rows, rowIdx, colIdx) {
+  // rowIdx is 1-based (sheet row number), colIdx is 0-based (gviz col index)
+  const r = rows[rowIdx - 1];
+  if (!r) return null;
+  return r[colIdx] || null;
+}
+
+function fmtM(val) {
+  if (!val && val !== 0) return '—';
+  const n = Math.round(val / 1000); // assume values in pesos, convert to M$
+  if (Math.abs(n) >= 1000) return `$${(n/1000).toFixed(1)}B`;
+  return `$${n}M`;
+}
+
+function fmtPct(val) {
+  if (!val && val !== 0) return '—';
+  return (val * 100).toFixed(1) + '%';
+}
+
+function applySheetDataToCompanies() {
+  companies.forEach(c => {
+    const rows = gsDataCache[c.name];
+    if (!rows) return;
+    const map = SHEET_ROW_MAP[c.name];
+    if (!map) return;
+
+    // For each period, read real 2026 ventas from the correct row + month col
+    const periodColMap = { ene: MONTH_COL_IDX.ene, feb: MONTH_COL_IDX.feb, mar: MONTH_COL_IDX.mar, q1: YTD_COL_IDX, ytd: YTD_COL_IDX };
+
+    Object.keys(c.periods).forEach(per => {
+      const colIdx = periodColMap[per];
+      if (colIdx === undefined) return;
+      const p = c.periods[per];
+
+      // Ventas real 2026
+      const vReal = getSheetValue(rows, map.ventas_real, colIdx);
+      // Ventas ppto 2026
+      const vPpto = getSheetValue(rows, map.cumpl_ppto, colIdx) ||
+                    getSheetValue(rows, map.cumpl_ppto, YTD_COL_IDX);
+      // Margen bruto % real
+      const mbReal = getSheetValue(rows, map.margen_real, colIdx);
+      // EBITDA %
+      const ebitdaPct = getSheetValue(rows, map.ebitda_pct_real, colIdx);
+      // Headcount
+      const hc = getSheetValue(rows, map.headcount, colIdx) ||
+                 getSheetValue(rows, map.headcount, MONTH_COL_IDX.ene);
+
+      // Ventas ppto row 4 same col for cumplimiento
+      const vPptoSameCol = getSheetValue(rows, 4, colIdx);
+
+      if (vReal !== null) {
+        const vRealM = Math.round(vReal / 1000);
+        p.ventas = `$${vRealM >= 1000 ? (vRealM/1000).toFixed(1)+'B' : vRealM+'M'}`;
+      }
+      if (mbReal !== null) p.margen = (mbReal * 100).toFixed(1) + '%';
+      if (ebitdaPct !== null) p.ebitda = (ebitdaPct * 100).toFixed(1) + '%';
+      if (hc !== null) c.headcount = Math.round(hc);
+
+      // Cumplimiento vs presupuesto
+      if (vReal !== null && vPptoSameCol) {
+        p.cumplimiento = Math.round((vReal / vPptoSameCol) * 100);
+      }
+
+      // Delta ventas vs 2025: row 30 (Typack) or equivalent
+      const ant_row = { Typack:30, Masterfibra:32, Coppelia:30, Colgram:29, 'Contempora Factoring':27, 'Contempora Leasing':27 };
+      const vAnt = getSheetValue(rows, ant_row[c.name], colIdx);
+      if (vReal !== null && vAnt) {
+        const delta = ((vReal - vAnt) / Math.abs(vAnt)) * 100;
+        p.deltaVentas = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%';
+      }
+
+      // Delta margen vs 2025
+      const mb_ant_row = { Typack:36, Masterfibra:40, Coppelia:36, Colgram:34, 'Contempora Factoring':30, 'Contempora Leasing':30 };
+      const mbAnt = getSheetValue(rows, mb_ant_row[c.name], colIdx);
+      if (mbReal !== null && mbAnt !== null) {
+        const deltaMb = (mbReal - mbAnt) * 100;
+        p.deltaMargen = (deltaMb >= 0 ? '+' : '') + deltaMb.toFixed(1) + 'pp';
+      }
+
+      // Spark — read last 8 months of real 2026 ventas (rows 56-ish, cols C-N)
+      if (per === currentPeriod) {
+        const sparkVals = [];
+        for (let col = MONTH_COL_IDX.ene; col <= MONTH_COL_IDX.dic; col++) {
+          const v = getSheetValue(rows, map.ventas_real, col);
+          if (v !== null && v > 0) sparkVals.push(v);
+        }
+        if (sparkVals.length > 0) {
+          // Normalize to 0-100 scale
+          const mx = Math.max(...sparkVals);
+          p.spark = sparkVals.map(v => Math.round((v/mx)*100));
+        }
+      }
+
+      // Subgrupos — read subgroup rows if defined
+      if (c.subgruposBase && p.sg) {
+        const sgRows = {
+          Typack:        [5,6,7],
+          Masterfibra:   [61,62,63,64,65],
+          Coppelia:      [57,58,59],
+          Colgram:       [55,56],
+        };
+        const sgRowNums = sgRows[c.name];
+        if (sgRowNums) {
+          const newSg = sgRowNums.map((rn, i) => {
+            const vSg = getSheetValue(rows, rn, colIdx);
+            const vSgAnt = getSheetValue(rows, rn + (ant_row[c.name] - map.ventas_real), colIdx);
+            const oldSg = p.sg[i] || {};
+            let delta = oldSg.delta || '—';
+            if (vSg !== null && vSgAnt) {
+              const d = ((vSg - vSgAnt) / Math.abs(vSgAnt)) * 100;
+              delta = (d >= 0 ? '+' : '') + d.toFixed(1) + '%';
+            }
+            return { v: vSg !== null ? Math.round(vSg/1000) : (oldSg.v||0), delta, pos: delta.startsWith('+') };
+          });
+          p.sg = newSg;
+        }
+      }
+    });
+  });
+}
+
+// Auto-sync every 5 minutes if connected
+setInterval(() => { if (gsSheetId) loadAllSheets(); }, 5 * 60 * 1000);
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+
+// ─────────────────────────────────────────────
+// VIEW SWITCHING
+// ─────────────────────────────────────────────
+let currentView = 'consolidado';
+
+function showView(v) {
+  currentView = v;
+  const isComp = v === 'comparativa';
+  document.getElementById('viewConsolidado').classList.toggle('hidden', isComp);
+  document.getElementById('viewComparativa').classList.toggle('active', isComp);
+  document.getElementById('navConsolidado').classList.toggle('active', !isComp);
+  document.getElementById('navComparativa').classList.toggle('active', isComp);
+  document.getElementById('mainTitle').textContent = isComp ? 'Vista Comparativa' : 'Dashboard Consolidado';
+  if (isComp) buildComparativa();
+}
+
+// ─────────────────────────────────────────────
+// METRICS DEFINITION
+// ─────────────────────────────────────────────
+const METRICS = [
+  { id:'ventas',       label:'Ventas',          unit:'$', extract: (c,p) => parseFloat(p.ventas.replace(/[$M]/g,'').replace(/\./g,'')) , fmt: v => `$${v}M`, delta: (c,p) => p.deltaVentas, higher:'better' },
+  { id:'margen',       label:'Margen Bruto',    unit:'%', extract: (c,p) => parseFloat(p.margen),                                        fmt: v => v.toFixed(1)+'%', delta: (c,p) => p.deltaMargen, higher:'better' },
+  { id:'ebitda',       label:'EBITDA',           unit:'%', extract: (c,p) => parseFloat(p.ebitda),                                        fmt: v => v.toFixed(1)+'%', delta: ()=>null, higher:'better' },
+  { id:'cumplimiento', label:'% Presupuesto',   unit:'%', extract: (c,p) => p.cumplimiento,                                              fmt: v => v+'%', delta: ()=>null, higher:'better' },
+  { id:'headcount',    label:'Headcount',        unit:'',  extract: (c,p) => c.headcount,                                                fmt: v => v+' pers.', delta: ()=>null, higher:'neutral' },
+];
+
+let activeMetrics = ['ventas','margen','ebitda','cumplimiento'];
+
+// ─────────────────────────────────────────────
+// BUILD COMPARATIVE VIEW
+// ─────────────────────────────────────────────
+function buildComparativa() {
+  buildMetricSelector();
+  buildCompCharts();
+  buildCompTable();
+  buildSpider();
+}
+
+function buildMetricSelector() {
+  const wrap = document.getElementById('metricSelector');
+  wrap.innerHTML = '<span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;align-self:center;margin-right:4px">Métricas:</span>';
+  METRICS.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = `metric-pill${activeMetrics.includes(m.id)?' active':''}`;
+    btn.textContent = m.label;
+    btn.onclick = () => {
+      if (activeMetrics.includes(m.id)) {
+        if (activeMetrics.length <= 1) return;
+        activeMetrics = activeMetrics.filter(x=>x!==m.id);
+      } else {
+        activeMetrics.push(m.id);
+      }
+      buildComparativa();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function buildCompCharts() {
+  const row = document.getElementById('compChartsRow');
+  row.innerHTML = '';
+  const metrics = METRICS.filter(m=>activeMetrics.includes(m.id));
+  metrics.forEach(m => {
+    const vals = companies.map(c=>({ c, v:m.extract(c,getPeriodData(c)) }));
+    const maxV = Math.max(...vals.map(x=>x.v));
+    const minV = Math.min(...vals.map(x=>x.v));
+    const section = document.createElement('div');
+    section.className = 'hbar-section fade-update';
+    const sortedVals = [...vals].sort((a,b)=>b.v-a.v);
+    const rows = sortedVals.map(({c,v})=>{
+      const pct = maxV===minV ? 100 : Math.round(((v-minV)/(maxV-minV))*85)+15;
+      const delta = m.delta(c,getPeriodData(c));
+      const pos = delta ? delta.startsWith('+') : null;
+      return `<div class="hbar-row">
+        <div class="hbar-label"><div class="hbar-dot" style="background:${c.color}"></div>${c.name.replace('Contempora ','')}</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;background:${c.color};opacity:0.85"></div></div>
+        <div class="hbar-val" style="color:${c.color}">${m.fmt(v)}${delta?`<div style="font-size:10.5px;font-weight:500;" class="${pos?'pos':'neg'}">${delta} vs 2025</div>`:''}</div>
+      </div>`;
+    }).join('');
+    section.innerHTML = `<div class="hbar-title">${m.label} — ${PERIOD_LABELS[currentPeriod].label}</div>${rows}`;
+    row.appendChild(section);
+  });
+}
+
+function buildCompTable() {
+  const metrics = METRICS.filter(m=>activeMetrics.includes(m.id));
+  const table = document.getElementById('compTable');
+
+  // Header — one th per metric, delta shown inline as sub-label
+  const headerCells = metrics.map(m=>{
+    const hasDelta = companies.some(c=>m.delta(c,getPeriodData(c))!==null);
+    return `<th>${m.label}${hasDelta?'<div style="font-size:9.5px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);margin-top:2px">vs 2025</div>':''}</th>`;
+  }).join('');
+
+  const rows = companies.map(c=>{
+    const p = getPeriodData(c);
+    const cells = metrics.map(m=>{
+      const v = m.extract(c,p);
+      const vals = companies.map(cc=>m.extract(cc,getPeriodData(cc)));
+      const max = Math.max(...vals), min = Math.min(...vals);
+      const isTop = v===max, isBot = v===min;
+      const color = m.higher==='better' ? (isTop?'#059669':isBot?'#DC2626':'var(--text)') : 'var(--text)';
+      const bg    = m.higher==='better' ? (isTop?'background:#ECFDF5':isBot?'background:#FEF2F2':'') : '';
+      const delta = m.delta(c,p);
+      const pos = delta ? delta.startsWith('+') : null;
+      return `<td class="comp-cell" style="${bg}">
+        <div class="comp-val" style="color:${color}">${m.fmt(v)}</div>
+        ${delta?`<div class="comp-delta-cell ${pos?'pos':'neg'}" style="font-size:11px;margin-top:2px">${delta}</div>`:''}
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td class="comp-name-cell">
+        <div class="comp-dot" style="background:${c.color}"></div>
+        <div><div class="comp-name">${c.name}</div><div class="comp-sector">${c.sector}</div></div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  table.innerHTML = `
+    <thead><tr><th>Empresa</th>${headerCells}</tr></thead>
+    <tbody>${rows}</tbody>
+  `;
+}
+
+function buildSpider() {
+  const canvas = document.getElementById('spiderCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2 - 20, cy = H/2;
+  const R = Math.min(cx,cy) - 30;
+
+  // Use fixed 5 axes for radar
+  const axes = [
+    { label:'Ventas',    extract:(c,p)=>parseFloat(p.ventas.replace(/[$M]/g,'').replace(/\./g,'')) },
+    { label:'Margen',    extract:(c,p)=>parseFloat(p.margen) },
+    { label:'EBITDA',    extract:(c,p)=>parseFloat(p.ebitda) },
+    { label:'Ppto %',    extract:(c,p)=>p.cumplimiento },
+    { label:'Headcount', extract:(c,p)=>c.headcount },
+  ];
+  const N = axes.length;
+
+  // Normalize each axis 0-1
+  const allVals = axes.map(a=>companies.map(c=>a.extract(c,getPeriodData(c))));
+  const axisMax = allVals.map(vs=>Math.max(...vs));
+  const axisMin = allVals.map(vs=>Math.min(...vs));
+  const norm = (v,i)=> axisMax[i]===axisMin[i] ? 0.5 : (v-axisMin[i])/(axisMax[i]-axisMin[i]);
+
+  // Draw grid
+  for (let ring=1; ring<=4; ring++) {
+    const r = R*(ring/4);
+    ctx.beginPath();
+    for (let i=0;i<N;i++) {
+      const angle = (i/N)*2*Math.PI - Math.PI/2;
+      const x=cx+r*Math.cos(angle), y=cy+r*Math.sin(angle);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle='#e5e2da'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // Draw axis lines + labels
+  axes.forEach((a,i)=>{
+    const angle=(i/N)*2*Math.PI-Math.PI/2;
+    const x=cx+R*Math.cos(angle), y=cy+R*Math.sin(angle);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y);
+    ctx.strokeStyle='#e5e2da'; ctx.lineWidth=1; ctx.stroke();
+    // Label
+    const lx=cx+(R+18)*Math.cos(angle), ly=cy+(R+18)*Math.sin(angle);
+    ctx.font='600 10px "DM Sans", sans-serif';
+    ctx.fillStyle='#8a8780';
+    ctx.textAlign = Math.abs(Math.cos(angle))<0.1?'center':Math.cos(angle)>0?'left':'right';
+    ctx.textBaseline = Math.abs(Math.sin(angle))<0.1?'middle':Math.sin(angle)>0?'top':'bottom';
+    ctx.fillText(a.label,lx,ly);
+  });
+
+  // Draw company polygons
+  companies.forEach(c=>{
+    const p=getPeriodData(c);
+    const vals=axes.map((a,i)=>norm(a.extract(c,p),i));
+    ctx.beginPath();
+    vals.forEach((v,i)=>{
+      const angle=(i/N)*2*Math.PI-Math.PI/2;
+      const r=R*v;
+      const x=cx+r*Math.cos(angle), y=cy+r*Math.sin(angle);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle=c.color; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle=c.color+'30'; ctx.fill();
+  });
+
+  // Legend
+  const legend = document.getElementById('spiderLegend');
+  legend.innerHTML = companies.map(c=>`
+    <div class="spider-leg-item">
+      <div class="spider-leg-dot" style="background:${c.color}"></div>
+      ${c.name.replace('Contempora ','')}
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────────
+// AUTH SYSTEM
+// ─────────────────────────────────────────────
+
+// Default passwords — stored in sessionStorage so they reset on close
+// Change via the Admin UI (🔑 Cambiar claves)
+const DEFAULT_PASSWORDS = { viewer: 'Contempora26', admin: 'FVB1985' };
+
+function getPasswords() {
+  return {
+    viewer: sessionStorage.getItem('pwd_viewer') || DEFAULT_PASSWORDS.viewer,
+    admin:  sessionStorage.getItem('pwd_admin')  || DEFAULT_PASSWORDS.admin,
+  };
+}
+
+let currentRole = null;
+let selectedRole = 'viewer';
+
+function selectRole(role) {
+  selectedRole = role;
+  document.querySelectorAll('.auth-role-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.role === role));
+  document.getElementById('authInput').value = '';
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authInput').classList.remove('error');
+}
+
+function togglePwd() {
+  const inp = document.getElementById('authInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function tryLogin() {
+  const pwd = document.getElementById('authInput').value;
+  const passwords = getPasswords();
+  const inp = document.getElementById('authInput');
+  const err = document.getElementById('authError');
+
+  if (pwd === passwords[selectedRole]) {
+    currentRole = selectedRole;
+    document.getElementById('authOverlay').classList.add('hidden');
+    document.getElementById('roleLabel').textContent =
+      selectedRole === 'admin' ? '⚙ Admin' : '👁 Viewer';
+    document.getElementById('adminOnlyLink').style.display =
+      selectedRole === 'admin' ? '' : 'none';
+    // Hide GS connect button for viewers
+    if (selectedRole === 'viewer') {
+      document.querySelectorAll('.gs-btn').forEach(b => b.style.display = 'none');
+    }
+    inp.classList.remove('error');
+    err.textContent = '';
+  } else {
+    inp.classList.add('error');
+    err.textContent = 'Clave incorrecta. Intenta de nuevo.';
+    inp.value = '';
+    inp.focus();
+  }
+}
+
+function logout() {
+  currentRole = null;
+  selectedRole = 'viewer';
+  document.getElementById('authOverlay').classList.remove('hidden');
+  document.getElementById('authInput').value = '';
+  document.getElementById('authError').textContent = '';
+  document.querySelectorAll('.auth-role-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.role === 'viewer'));
+}
+
+function savePasswords() {
+  const newViewer = document.getElementById('newViewerPwd').value.trim();
+  const newAdmin  = document.getElementById('newAdminPwd').value.trim();
+  if (newViewer) sessionStorage.setItem('pwd_viewer', newViewer);
+  if (newAdmin)  sessionStorage.setItem('pwd_admin', newAdmin);
+  document.getElementById('chpwdModal').classList.remove('open');
+  document.getElementById('newViewerPwd').value = '';
+  document.getElementById('newAdminPwd').value = '';
+  // Brief confirmation
+  const link = document.getElementById('adminOnlyLink');
+  const orig = link.textContent;
+  link.textContent = '✓ Claves guardadas';
+  setTimeout(() => link.textContent = orig, 2500);
+}
+
+// Block GS modal for viewers
+const origGSOpen = () => document.getElementById('modal').classList.add('open');
+document.querySelectorAll('.gs-btn').forEach(b => {
+  b.onclick = () => {
+    if (currentRole !== 'admin') return;
+    document.getElementById('modal').classList.add('open');
+  };
+});
+
+// ─── INIT ───
+setPeriod('mar');
+</script>
+</body>
+</html>
