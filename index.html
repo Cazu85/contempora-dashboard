@@ -946,6 +946,14 @@ const SHEET_CONFIG = {
 const COL = { anual:1, ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, oct:10, nov:11, dic:12, ytd:14 };
 const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, q1:COL.ytd, ytd:COL.ytd };
 
+function getBestCol(rows, rowNum, per) {
+  // For monthly periods: use the month col if non-zero, otherwise fall back to YTD
+  if (per === 'q1' || per === 'ytd') return COL.ytd;
+  const monthCol = PERIOD_COL[per];
+  const v = getVal(rows, rowNum, monthCol);
+  return (v !== null && v !== 0) ? monthCol : COL.ytd;
+}
+
 let gsSheetId = null;
 let gsDataCache = {};
 
@@ -1048,28 +1056,57 @@ function applySheetData() {
     }
 
     Object.keys(c.periods).forEach(per => {
-      const col = PERIOD_COL[per];
-      if (col === undefined) return;
+      if (PERIOD_COL[per] === undefined) return;
       const p = c.periods[per];
+
+      // Use the month column if it has data, otherwise fall back to YTD
+      const col   = getBestCol(rows, cfg.real_ventas, per);
+      const colAnt = getBestCol(rows, cfg.ant_ventas, per);
 
       const vReal  = getVal(rows, cfg.real_ventas, col);
       const vPpto  = (per==='q1'||per==='ytd')
                      ? getVal(rows, cfg.ppto_ventas, COL.anual)
                      : getVal(rows, cfg.ppto_ventas, col);
-      const vAnt   = getVal(rows, cfg.ant_ventas,  col);
+      const vAnt   = getVal(rows, cfg.ant_ventas,  colAnt);
       const mbReal = getVal(rows, cfg.real_margen, col);
-      const mbAnt  = getVal(rows, cfg.ant_margen,  col);
+      const mbAnt  = getVal(rows, cfg.ant_margen,  colAnt);
       const edReal = getVal(rows, cfg.real_ebitda, col);
-      const hc     = getVal(rows, cfg.headcount, COL.feb) || getVal(rows, cfg.headcount, COL.ene);
+      // Headcount: use latest non-zero month
+      const hc = getVal(rows, cfg.headcount, COL.feb) ||
+                 getVal(rows, cfg.headcount, COL.ene) ||
+                 getVal(rows, cfg.headcount, COL.anual);
 
       if (vReal !== null)  p.ventas = fmtVentas(vReal);
       if (mbReal !== null) p.margen = (mbReal * 100).toFixed(1) + '%';
       if (edReal !== null) p.ebitda = (edReal * 100).toFixed(1) + '%';
       if (hc !== null)     c.headcount = Math.round(hc);
 
-      // Cumplimiento
-      if (vReal && vPpto && vPpto !== 0) {
-        p.cumplimiento = Math.round((vReal / vPpto) * 100);
+      // Cumplimiento: real acumulado vs presupuesto acumulado mismo período
+      // Para períodos mensuales: sumar cols desde Ene hasta el último mes con datos
+      // Para q1/ytd: usar YTD de ambos
+      let vPptoAcum = null;
+      if (per === 'q1' || per === 'ytd') {
+        // YTD real vs presupuesto anual — mejor aproximación disponible
+        vPptoAcum = getVal(rows, cfg.ppto_ventas, COL.ytd) || getVal(rows, cfg.ppto_ventas, COL.anual);
+      } else {
+        // Sumar presupuesto mes a mes hasta el último mes con datos reales
+        // Detectar hasta qué mes hay datos reales
+        let lastMonthWithData = COL.ene;
+        for (let ci = COL.ene; ci <= COL.dic; ci++) {
+          const v = getVal(rows, cfg.real_ventas, ci);
+          if (v && v !== 0) lastMonthWithData = ci;
+        }
+        // Sumar presupuesto desde Ene hasta ese mes
+        let pptoSum = 0;
+        for (let ci = COL.ene; ci <= lastMonthWithData; ci++) {
+          const v = getVal(rows, cfg.ppto_ventas, ci);
+          if (v) pptoSum += v;
+        }
+        vPptoAcum = pptoSum > 0 ? pptoSum : null;
+      }
+      // vReal ya viene del YTD (gracias a getBestCol), así que comparamos directamente
+      if (vReal && vPptoAcum && vPptoAcum !== 0) {
+        p.cumplimiento = Math.round((vReal / vPptoAcum) * 100);
       }
 
       // Delta ventas vs 2025
@@ -1098,8 +1135,8 @@ function applySheetData() {
       // Subgrupos
       if (c.subgruposBase && p.sg && cfg.sg_rows.length) {
         p.sg = cfg.sg_rows.map((rn, i) => {
-          const vSg  = getVal(rows, rn, col);
-          const vAntSg = cfg.sg_ant[i] ? getVal(rows, cfg.sg_ant[i], col) : null;
+          const vSg    = getVal(rows, rn, col);
+          const vAntSg = cfg.sg_ant[i] ? getVal(rows, cfg.sg_ant[i], colAnt) : null;
           let delta = '—'; let pos = true;
           if (vSg !== null && vAntSg && vAntSg !== 0) {
             const d = ((vSg - vAntSg) / Math.abs(vAntSg)) * 100;
