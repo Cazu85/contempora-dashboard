@@ -1058,12 +1058,93 @@ function applySheetData() {
     const cfg  = SHEET_CONFIG[c.name];
     if (!rows || !cfg) return;
 
-    // Check if this company has real data loaded
-    const eneReal = getVal(rows, cfg.real_ventas, COL.ene);
-    const febReal = getVal(rows, cfg.real_ventas, COL.feb);
+    // ── Find rows by label in column A ──────────────────────────
+    function findRow(labels) {
+      if (!Array.isArray(labels)) labels = [labels];
+      for (let i = 0; i < rows.length; i++) {
+        const a = (rows[i][0] || '').toString().trim().toLowerCase();
+        for (const lbl of labels) {
+          if (a.includes(lbl.toLowerCase())) return i + 1; // 1-based
+        }
+      }
+      return null;
+    }
+
+    const rowRealVentas  = findRow(['Ventas 2026']);
+    const rowPptoVentas  = findRow(['Ventas Presupuestadas', 'Ventas presupuestadas']);
+    const rowAntVentas   = findRow(['Ventas 2025']);
+    const rowRealMargen  = findRow(['Margen Bruto %']);
+    const rowAntMargen   = null; // will find second occurrence
+    const rowRealEbitda  = findRow(['EBITDA %']);
+    const rowHeadcount   = findRow(['Headcount']);
+
+    // For 2025 margen: find second occurrence of 'Margen Bruto %'
+    let margenCount = 0;
+    let rowAntMargenIdx = null;
+    for (let i = 0; i < rows.length; i++) {
+      const a = (rows[i][0] || '').toString().trim().toLowerCase();
+      if (a.includes('margen bruto %')) {
+        margenCount++;
+        if (margenCount === 2) { rowAntMargenIdx = i + 1; break; }
+      }
+    }
+
+    // For real margen: find third occurrence (real 2026)
+    let margenCount2 = 0;
+    let rowRealMargenIdx = null;
+    for (let i = 0; i < rows.length; i++) {
+      const a = (rows[i][0] || '').toString().trim().toLowerCase();
+      if (a.includes('margen bruto %')) {
+        margenCount2++;
+        if (margenCount2 === 3) { rowRealMargenIdx = i + 1; break; }
+      }
+    }
+
+    // For EBITDA%: find third occurrence
+    let ebitdaCount = 0;
+    let rowRealEbitdaIdx = null;
+    for (let i = 0; i < rows.length; i++) {
+      const a = (rows[i][0] || '').toString().trim().toLowerCase();
+      if (a.includes('ebitda %')) {
+        ebitdaCount++;
+        if (ebitdaCount === 3) { rowRealEbitdaIdx = i + 1; break; }
+      }
+    }
+
+    // Override cfg with detected rows
+    const detectedCfg = {
+      ...cfg,
+      real_ventas: rowRealVentas || cfg.real_ventas,
+      ppto_ventas: rowPptoVentas || cfg.ppto_ventas,
+      ant_ventas:  rowAntVentas  || cfg.ant_ventas,
+      real_margen: rowRealMargenIdx || cfg.real_margen,
+      ant_margen:  rowAntMargenIdx  || cfg.ant_margen,
+      real_ebitda: rowRealEbitdaIdx || cfg.real_ebitda,
+      headcount:   rowHeadcount || cfg.headcount,
+    };
+
+    // Detect subgroup rows: lines indented under real ventas
+    if (c.subgruposBase && c.subgruposBase.length && rowRealVentas) {
+      const sgRowsDetected = [];
+      for (let i = rowRealVentas; i < Math.min(rowRealVentas + 10, rows.length); i++) {
+        const a = (rows[i][0] || '').toString().trim();
+        // Subgroup rows are indented (start with spaces) and non-empty
+        if (a && rows[i][0].toString().startsWith(' ') || a.match(/^[A-ZÁÉÍÓÚ]/)) {
+          const nextMainRow = (rows[i][0]||'').toString().trim().toLowerCase();
+          if (nextMainRow.includes('costo') || nextMainRow.includes('utilidad') || nextMainRow.includes('margen')) break;
+          if (a && !nextMainRow.includes('ventas')) sgRowsDetected.push(i + 1);
+        }
+      }
+      if (sgRowsDetected.length === c.subgruposBase.length) {
+        detectedCfg.sg_rows = sgRowsDetected;
+      }
+    }
+
+    // Check if this company has real data
+    const eneReal = getVal(rows, detectedCfg.real_ventas, COL.ene);
+    const febReal = getVal(rows, detectedCfg.real_ventas, COL.feb);
     const hasData = (eneReal && eneReal !== 0) || (febReal && febReal !== 0);
 
-    // If no data at all, reset to zeros so example data doesn't show
     if (!hasData) {
       Object.keys(c.periods).forEach(per => {
         const p = c.periods[per];
@@ -1080,47 +1161,43 @@ function applySheetData() {
       if (PERIOD_COL[per] === undefined) return;
       const p = c.periods[per];
 
-      // Use the month column if it has data, otherwise fall back to YTD
-      const col   = getBestCol(rows, cfg.real_ventas, per);
-      const colAnt = getBestCol(rows, cfg.ant_ventas, per);
+      const col    = getBestCol(rows, detectedCfg.real_ventas, per);
+      const colAnt = getBestCol(rows, detectedCfg.ant_ventas,  per);
 
-      const vReal  = getVal(rows, cfg.real_ventas, col);
-      const vPpto  = (per==='q1'||per==='ytd')
-                     ? getVal(rows, cfg.ppto_ventas, COL.anual)
-                     : getVal(rows, cfg.ppto_ventas, col);
-      const vAnt   = getVal(rows, cfg.ant_ventas,  colAnt);
-      const mbReal = getVal(rows, cfg.real_margen, col);
-      const mbAnt  = getVal(rows, cfg.ant_margen,  colAnt);
-      const edReal = getVal(rows, cfg.real_ebitda, col);
-      // Headcount: use latest non-zero month
-      const hc = getVal(rows, cfg.headcount, COL.feb) ||
-                 getVal(rows, cfg.headcount, COL.ene) ||
-                 getVal(rows, cfg.headcount, COL.anual);
+      const vReal  = getVal(rows, detectedCfg.real_ventas,  col);
+      const vAnt   = getVal(rows, detectedCfg.ant_ventas,   colAnt);
+      const mbReal = getVal(rows, detectedCfg.real_margen,  col);
+      const mbAnt  = getVal(rows, detectedCfg.ant_margen,   colAnt);
+      const edReal = getVal(rows, detectedCfg.real_ebitda,  col);
+      const hc     = getVal(rows, detectedCfg.headcount, COL.feb) ||
+                     getVal(rows, detectedCfg.headcount, COL.ene) ||
+                     getVal(rows, detectedCfg.headcount, COL.anual);
 
-      const vRealM  = toMillions(vReal);
-      const vAntM   = toMillions(vAnt);
+      const vRealM = toMillions(vReal);
+      const vAntM  = toMillions(vAnt);
 
       if (vRealM !== null)  p.ventas = fmtVentas(vReal);
       if (mbReal !== null) p.margen = safeMargen(mbReal).toFixed(1) + '%';
       if (edReal !== null) p.ebitda = safeMargen(edReal).toFixed(1) + '%';
       if (hc !== null)     c.headcount = Math.round(hc);
 
-      // Cumplimiento: real acumulado vs presupuesto acumulado mismo período
+      // Cumplimiento
       let vPptoAcum = null;
       if (per === 'q1' || per === 'ytd') {
-        vPptoAcum = toMillions(getVal(rows, cfg.ppto_ventas, COL.ytd) || getVal(rows, cfg.ppto_ventas, COL.anual));
+        vPptoAcum = toMillions(getVal(rows, detectedCfg.ppto_ventas, COL.ytd) ||
+                               getVal(rows, detectedCfg.ppto_ventas, COL.anual));
       } else {
-        let lastMonthWithData = COL.ene;
+        let lastCol = COL.ene;
         for (let ci = COL.ene; ci <= COL.dic; ci++) {
-          const v = getVal(rows, cfg.real_ventas, ci);
-          if (v && v !== 0) lastMonthWithData = ci;
+          const v = getVal(rows, detectedCfg.real_ventas, ci);
+          if (v && v !== 0) lastCol = ci;
         }
-        let pptoSum = 0;
-        for (let ci = COL.ene; ci <= lastMonthWithData; ci++) {
-          const v = toMillions(getVal(rows, cfg.ppto_ventas, ci));
-          if (v) pptoSum += v;
+        let sum = 0;
+        for (let ci = COL.ene; ci <= lastCol; ci++) {
+          const v = toMillions(getVal(rows, detectedCfg.ppto_ventas, ci));
+          if (v) sum += v;
         }
-        vPptoAcum = pptoSum > 0 ? pptoSum : null;
+        vPptoAcum = sum > 0 ? sum : null;
       }
       if (vRealM && vPptoAcum && vPptoAcum !== 0) {
         p.cumplimiento = Math.round((vRealM / vPptoAcum) * 100);
@@ -1142,7 +1219,7 @@ function applySheetData() {
       if (per === currentPeriod) {
         const raw = [];
         for (let ci = COL.ene; ci <= COL.dic; ci++) {
-          const v = getVal(rows, cfg.real_ventas, ci);
+          const v = getVal(rows, detectedCfg.real_ventas, ci);
           raw.push(v && v > 0 ? v : 0);
         }
         const mx = Math.max(...raw);
@@ -1150,13 +1227,17 @@ function applySheetData() {
       }
 
       // Subgrupos
-      if (c.subgruposBase && p.sg && cfg.sg_rows.length) {
-        p.sg = cfg.sg_rows.map((rn, i) => {
+      if (c.subgruposBase && p.sg && detectedCfg.sg_rows && detectedCfg.sg_rows.length) {
+        // Find ant subgroup rows: same offset from ant_ventas as sg_rows from real_ventas
+        const offset = detectedCfg.real_ventas;
+        p.sg = detectedCfg.sg_rows.map((rn, i) => {
           const vSg    = getVal(rows, rn, col);
-          const vAntSg = cfg.sg_ant[i] ? getVal(rows, cfg.sg_ant[i], colAnt) : null;
+          // Find equivalent ant row
+          const antSgRow = detectedCfg.ant_ventas + (rn - offset);
+          const vAntSg = antSgRow > 0 ? getVal(rows, antSgRow, colAnt) : null;
           let delta = '—'; let pos = true;
           if (vSg !== null && vAntSg && vAntSg !== 0) {
-            const d = ((vSg - vAntSg) / Math.abs(vAntSg)) * 100;
+            const d = ((toMillions(vSg) - toMillions(vAntSg)) / Math.abs(toMillions(vAntSg))) * 100;
             delta = (d>=0?'+':'') + d.toFixed(1) + '%';
             pos = d >= 0;
           }
@@ -1175,22 +1256,30 @@ function showDebug() {
   const lines = [];
   Object.keys(SHEET_CONFIG).forEach(name => {
     const rows = gsDataCache[name];
-    const cfg  = SHEET_CONFIG[name];
     if (!rows) { lines.push(`❌ ${name}: no cargado`); return; }
-    const col = COL.ytd;
-    const vReal  = getVal(rows, cfg.real_ventas,  col);
-    const vPpto  = getVal(rows, cfg.ppto_ventas,  COL.anual);
-    const vAnt   = getVal(rows, cfg.ant_ventas,   col);
-    const mbReal = getVal(rows, cfg.real_margen,  col);
-    const edReal = getVal(rows, cfg.real_ebitda,  col);
-    const hc     = getVal(rows, cfg.headcount,    COL.feb) || getVal(rows, cfg.headcount, COL.ene);
-    lines.push(`✅ ${name}:`);
-    lines.push(`   Ventas real YTD raw: ${vReal} → ${fmtVentas(vReal)}`);
-    lines.push(`   Ventas ppto anual raw: ${vPpto} → ${fmtVentas(vPpto)}`);
-    lines.push(`   Ventas 2025 YTD raw: ${vAnt} → ${fmtVentas(vAnt)}`);
-    lines.push(`   Margen real YTD raw: ${mbReal} → ${mbReal !== null ? safeMargen(mbReal).toFixed(1)+'%' : '—'}`);
-    lines.push(`   EBITDA real YTD raw: ${edReal} → ${edReal !== null ? safeMargen(edReal).toFixed(1)+'%' : '—'}`);
-    lines.push(`   Headcount raw: ${hc}`);
+
+    function findRow(label) {
+      for (let i = 0; i < rows.length; i++) {
+        if ((rows[i][0]||'').toString().trim().toLowerCase().includes(label.toLowerCase())) return i+1;
+      }
+      return null;
+    }
+    const rV26 = findRow('Ventas 2026');
+    const rPpto = findRow('Ventas Presupuestadas');
+    const rV25 = findRow('Ventas 2025');
+
+    // Find 3rd occurrence of Margen Bruto %
+    let mc=0, rMb=null;
+    for(let i=0;i<rows.length;i++){if((rows[i][0]||'').toString().includes('Margen Bruto %')){mc++;if(mc===3){rMb=i+1;break;}}}
+    let ec=0, rEb=null;
+    for(let i=0;i<rows.length;i++){if((rows[i][0]||'').toString().includes('EBITDA %')){ec++;if(ec===3){rEb=i+1;break;}}}
+
+    lines.push(`✅ ${name} (filas detectadas: V26=${rV26} Ppto=${rPpto} V25=${rV25} Mb=${rMb} Eb=${rEb}):`);
+    if(rV26) lines.push(`   Ventas 2026 YTD: ${getVal(rows,rV26,COL.ytd)} → ${fmtVentas(getVal(rows,rV26,COL.ytd))}`);
+    if(rPpto) lines.push(`   Ppto anual: ${getVal(rows,rPpto,COL.anual)} → ${fmtVentas(getVal(rows,rPpto,COL.anual))}`);
+    if(rV25) lines.push(`   Ventas 2025 YTD: ${getVal(rows,rV25,COL.ytd)} → ${fmtVentas(getVal(rows,rV25,COL.ytd))}`);
+    if(rMb) lines.push(`   Margen real YTD: ${getVal(rows,rMb,COL.ytd)} → ${safeMargen(getVal(rows,rMb,COL.ytd))?.toFixed(1)}%`);
+    if(rEb) lines.push(`   EBITDA real YTD: ${getVal(rows,rEb,COL.ytd)} → ${safeMargen(getVal(rows,rEb,COL.ytd))?.toFixed(1)}%`);
     lines.push('');
   });
   alert(lines.join('\n'));
