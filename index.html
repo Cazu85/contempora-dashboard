@@ -1178,13 +1178,9 @@ function safeMargen(v) {
 
 function fmtVentas(val) {
   if (val === null || val === undefined) return '—';
-  // Values from Google Sheets CSV:
-  // - If > 100,000: likely full pesos → convert to M$ dividing by 1,000,000
-  // - If between 100 and 100,000: already in M$ (millones)
-  // - If < 100: likely billions already formatted
   const mVal = val > 100000 ? val / 1000000 : val;
-  if (Math.abs(mVal) >= 1000) return `$${(mVal/1000).toFixed(1)}B`;
-  return `$${Math.round(mVal)}M`;
+  const rounded = Math.round(mVal);
+  return `$${rounded.toLocaleString('es-CL')}M`;
 }
 
 function toMillions(val) {
