@@ -1312,33 +1312,44 @@ function applySheetData() {
       const p = c.periods[per];
 
       const col    = getBestCol(rows, detectedCfg.real_ventas, per);
-      const colAnt = getBestCol(rows, detectedCfg.ant_ventas,  per);
 
       const vReal  = getVal(rows, detectedCfg.real_ventas,  col);
-      const vAnt   = getVal(rows, detectedCfg.ant_ventas,   colAnt);
       const mbReal = getVal(rows, detectedCfg.real_margen,  col);
-      const mbAnt  = getVal(rows, detectedCfg.ant_margen,   colAnt);
       const edReal = getVal(rows, detectedCfg.real_ebitda,  col);
       const hc     = getVal(rows, detectedCfg.headcount, COL.feb) ||
                      getVal(rows, detectedCfg.headcount, COL.ene) ||
                      getVal(rows, detectedCfg.headcount, COL.anual);
 
       const vRealM = toMillions(vReal);
-      const vAntM  = toMillions(vAnt);
+
+      // For 2025 comparison: always sum the same months that have real 2026 data
+      // so we compare apples to apples (Ene+Feb 2026 vs Ene+Feb 2025)
+      let lastColWithData = null;
+      for (let ci = COL.ene; ci <= COL.dic; ci++) {
+        const v = getVal(rows, detectedCfg.real_ventas, ci);
+        if (v && v !== 0) lastColWithData = ci;
+      }
+
+      let vAntM = null;
+      let mbAnt = null;
+      if (lastColWithData !== null) {
+        let sumAnt = 0;
+        for (let ci = COL.ene; ci <= lastColWithData; ci++) {
+          const v = toMillions(getVal(rows, detectedCfg.ant_ventas, ci));
+          if (v) sumAnt += v;
+        }
+        vAntM = sumAnt > 0 ? sumAnt : null;
+        // For margen 2025: use same col as real (month or ytd)
+        const colAnt = per === 'q1' || per === 'ytd' ? COL.ytd : col;
+        mbAnt = getVal(rows, detectedCfg.ant_margen, colAnt);
+      }
 
       if (vRealM !== null)  p.ventas = fmtVentas(vReal);
       if (mbReal !== null) p.margen = safeMargen(mbReal).toFixed(1) + '%';
       if (edReal !== null) p.ebitda = safeMargen(edReal).toFixed(1) + '%';
       if (hc !== null)     c.headcount = Math.round(hc);
 
-      // Cumplimiento
-      // Cumplimiento: real acumulado vs presupuesto acumulado de los mismos meses
-      // Detectar hasta qué mes hay datos reales cargados
-      let lastColWithData = null;
-      for (let ci = COL.ene; ci <= COL.dic; ci++) {
-        const v = getVal(rows, detectedCfg.real_ventas, ci);
-        if (v && v !== 0) lastColWithData = ci;
-      }
+      // Cumplimiento: ppto acumulado de los mismos meses con datos reales
       let vPptoAcum = null;
       if (lastColWithData !== null) {
         let sum = 0;
