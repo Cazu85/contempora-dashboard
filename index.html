@@ -1390,13 +1390,12 @@ function applySheetData() {
 
       // Subgrupos
       if (c.subgruposBase && p.sg && detectedCfg.sg_rows && detectedCfg.sg_rows.length) {
-        // Find ant subgroup rows: same offset from ant_ventas as sg_rows from real_ventas
         const offset = detectedCfg.real_ventas;
+        const colAntSg = lastColWithData !== null ? COL.ytd : COL.ene;
         p.sg = detectedCfg.sg_rows.map((rn, i) => {
           const vSg    = getVal(rows, rn, col);
-          // Find equivalent ant row
           const antSgRow = detectedCfg.ant_ventas + (rn - offset);
-          const vAntSg = antSgRow > 0 ? getVal(rows, antSgRow, colAnt) : null;
+          const vAntSg = antSgRow > 0 ? getVal(rows, antSgRow, colAntSg) : null;
           let delta = '—'; let pos = true;
           if (vSg !== null && vAntSg && vAntSg !== 0) {
             const d = ((toMillions(vSg) - toMillions(vAntSg)) / Math.abs(toMillions(vAntSg))) * 100;
