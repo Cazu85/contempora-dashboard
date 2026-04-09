@@ -980,7 +980,107 @@ function openDrawer(id) {
       </div>`).join('');
   }
 
-  // ── Render ────────────────────────────────────────────────────
+  // ── Proyección anual ─────────────────────────────────────────
+  let proyHTML = '';
+  if (rows && cfg) {
+    const CRECIMIENTO_CHILE = 0.025; // 2.5% PIB Banco Central 2026
+
+    const realVentasRow = findRowByLabel('Ventas 2026', 1);
+    const antVentasRow  = findRowByLabel('Ventas 2025', 1);
+
+    if (realVentasRow && antVentasRow) {
+      // YTD real 2026
+      const ytdReal = toMillions(getVal(rows, realVentasRow, COL.ytd)) || 0;
+
+      // Detectar cuántos meses tienen datos reales
+      let lastMonthIdx = -1;
+      for (let mi = 0; mi < 12; mi++) {
+        const v = getVal(rows, realVentasRow, COL.ene + mi);
+        if (v && v !== 0) lastMonthIdx = mi;
+      }
+      const mesesConDatos = lastMonthIdx + 1;
+
+      // YTD 2025 — mismo período
+      let ytdAnt = 0;
+      for (let mi = 0; mi <= lastMonthIdx; mi++) {
+        const v = toMillions(getVal(rows, antVentasRow, COL.ene + mi));
+        if (v) ytdAnt += v;
+      }
+
+      // Total anual 2025
+      const totalAnt = toMillions(getVal(rows, antVentasRow, COL.ytd)) || 0;
+
+      // Factor estacionalidad: qué % del año representan los meses con datos en 2025
+      const factorEstacionalidad = ytdAnt > 0 ? totalAnt / ytdAnt : 12 / mesesConDatos;
+
+      // Proyección = YTD real × factor estacionalidad × (1 + crecimiento Chile)
+      const proyAnual = Math.round(ytdReal * factorEstacionalidad * (1 + CRECIMIENTO_CHILE));
+
+      // Presupuesto anual
+      const pptoRow = findRowByLabel('Ventas Presupuestadas', 1);
+      const pptoAnual = toMillions(getVal(rows, pptoRow, COL.anual)) || 0;
+
+      // Diferencias
+      const diffVsPpto = proyAnual - Math.round(pptoAnual);
+      const diffVs2025 = proyAnual - Math.round(totalAnt);
+      const pctVsPpto  = pptoAnual > 0 ? ((proyAnual / pptoAnual) - 1) * 100 : 0;
+      const pctVs2025  = totalAnt  > 0 ? ((proyAnual / totalAnt)  - 1) * 100 : 0;
+
+      const mesesLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const ultimoMes = mesesLabels[lastMonthIdx];
+
+      proyHTML = `<div class="detail-section">
+        <div class="detail-section-title">Proyección de ventas 2026</div>
+
+        <!-- Valor proyectado destacado -->
+        <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:16px">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Proyección anual</div>
+            <div style="font-size:28px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-0.02em;color:${c.color}">${fmtM(proyAnual)}</div>
+          </div>
+        </div>
+
+        <!-- Metodología en gris pequeño -->
+        <div style="font-size:11px;color:var(--text-muted);background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6">
+          <strong style="color:var(--text-muted)">Cómo se calcula:</strong><br>
+          YTD real Ene–${ultimoMes} (${fmtM(Math.round(ytdReal))}) × factor estacionalidad 2025 
+          (${totalAnt > 0 ? (factorEstacionalidad).toFixed(2) : '—'}x) × crecimiento esperado Chile 2026 (2.5%)
+        </div>
+
+        <!-- Tabla comparativa -->
+        <table class="mth-table">
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              <th style="text-align:right">Monto</th>
+              <th style="text-align:right">vs Proyección</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600;color:${c.color}">🎯 Proyección 2026</td>
+              <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600;color:${c.color}">${fmtM(proyAnual)}</td>
+              <td style="text-align:right">—</td>
+            </tr>
+            <tr>
+              <td>📋 Presupuesto 2026</td>
+              <td style="text-align:right;font-family:'DM Mono',monospace">${fmtM(Math.round(pptoAnual))}</td>
+              <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px" class="${diffVsPpto>=0?'pos':'neg'}">
+                ${diffVsPpto>=0?'+':''}${fmtM(Math.abs(diffVsPpto))} (${pctVsPpto>=0?'+':''}${pctVsPpto.toFixed(1)}%)
+              </td>
+            </tr>
+            <tr>
+              <td>📅 Real 2025</td>
+              <td style="text-align:right;font-family:'DM Mono',monospace">${fmtM(Math.round(totalAnt))}</td>
+              <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px" class="${diffVs2025>=0?'pos':'neg'}">
+                ${diffVs2025>=0?'+':''}${fmtM(Math.abs(diffVs2025))} (${pctVs2025>=0?'+':''}${pctVs2025.toFixed(1)}%)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+    }
+  }
   document.getElementById('drawerBody').innerHTML = `
     <div class="detail-kpi-strip">
       <div class="detail-kpi">
@@ -1003,6 +1103,8 @@ function openDrawer(id) {
         <div class="detail-kpi-delta" style="color:${cumplColor}">${cumplLabel}</div>
       </div>
     </div>
+
+    ${proyHTML}
 
     ${sgHTML}
 
