@@ -1451,11 +1451,26 @@ function showView(v) {
 // METRICS DEFINITION
 // ─────────────────────────────────────────────
 const METRICS = [
-  { id:'ventas',       label:'Ventas',          unit:'$', extract: (c,p) => parseFloat(p.ventas.replace(/[$M]/g,'').replace(/\./g,'')) , fmt: v => `$${v}M`, delta: (c,p) => p.deltaVentas, higher:'better' },
-  { id:'margen',       label:'Margen Bruto',    unit:'%', extract: (c,p) => parseFloat(p.margen),                                        fmt: v => v.toFixed(1)+'%', delta: (c,p) => p.deltaMargen, higher:'better' },
-  { id:'ebitda',       label:'EBITDA',           unit:'%', extract: (c,p) => parseFloat(p.ebitda),                                        fmt: v => v.toFixed(1)+'%', delta: ()=>null, higher:'better' },
-  { id:'cumplimiento', label:'% Presupuesto',   unit:'%', extract: (c,p) => p.cumplimiento,                                              fmt: v => v+'%', delta: ()=>null, higher:'better' },
-  { id:'headcount',    label:'Headcount',        unit:'',  extract: (c,p) => c.headcount,                                                fmt: v => v+' pers.', delta: ()=>null, higher:'neutral' },
+  { id:'ventas',       label:'Ventas',        unit:'$',
+    extract: (c,p) => {
+      const s = p.ventas || '$0M';
+      if (s.includes('B')) return parseFloat(s.replace(/[$B]/g,'')) * 1000;
+      return parseFloat(s.replace(/[$M]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+    },
+    fmt: v => v>=1000 ? `$${(v/1000).toFixed(1)}B` : `$${Math.round(v)}M`,
+    delta: (c,p) => p.deltaVentas, higher:'better' },
+  { id:'margen',       label:'Margen Bruto',  unit:'%',
+    extract: (c,p) => parseFloat(p.margen)||0,
+    fmt: v => v.toFixed(1)+'%', delta: (c,p) => p.deltaMargen, higher:'better' },
+  { id:'ebitda',       label:'EBITDA',        unit:'%',
+    extract: (c,p) => parseFloat(p.ebitda)||0,
+    fmt: v => v.toFixed(1)+'%', delta: ()=>null, higher:'better' },
+  { id:'cumplimiento', label:'% Presupuesto', unit:'%',
+    extract: (c,p) => p.cumplimiento||0,
+    fmt: v => v+'%', delta: ()=>null, higher:'better' },
+  { id:'headcount',    label:'Headcount',     unit:'',
+    extract: (c,p) => c.headcount||0,
+    fmt: v => v+' pers.', delta: ()=>null, higher:'neutral' },
 ];
 
 let activeMetrics = ['ventas','margen','ebitda','cumplimiento'];
