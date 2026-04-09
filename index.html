@@ -757,65 +757,148 @@ function buildBVR() {
 }
 
 // ─────────────────────────────────────────────
-// DRAWER
+// DRAWER — row config per company for detail panel
 // ─────────────────────────────────────────────
+const DRAWER_CFG = {
+  'Typack':              { cv:60, go:63, dso:104, rot:105, hc:98 },
+  'Masterfibra':         { cv:66, go:69, dso:110, rot:111, hc:104 },
+  'Coppelia':            { cv:60, go:63, dso:104, rot:105, hc:98  },
+  'Colgram':             { cv:57, go:60, dso:101, rot:102, hc:95  },
+  'Contempora Factoring':{ cv:51, go:54, dso:null, rot:null, hc:88 },
+  'Contempora Leasing':  { cv:51, go:54, dso:null, rot:null, hc:88 },
+};
+
+const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
 function openDrawer(id) {
   openDrawerId = id;
   const c = companies.find(x=>x.id===id);
   if (!c) return;
   const p = getPeriodData(c);
+  const rows = gsDataCache[c.name];
+  const cfg  = SHEET_CONFIG[c.name];
+  const dcfg = DRAWER_CFG[c.name];
 
   document.getElementById('drawerName').textContent = c.name;
   document.getElementById('drawerName').style.color = c.color;
-  document.getElementById('drawerMeta').textContent = `${c.sector} · ${c.headcount} colaboradores · ${PERIOD_LABELS[currentPeriod].label}`;
-
-  const maxM = Math.max(...p.monthly.map(x=>Math.max(x.r,x.b)));
-
-  const barCols = p.monthly.map(m=>{
-    const rH=Math.round((m.r/maxM)*96), bH=Math.round((m.b/maxM)*96);
-    return `<div class="bar-col">
-      <div class="bar-val-label">$${m.r}M</div>
-      <div style="width:100%;position:relative;height:${Math.max(rH,bH)}px">
-        <div style="position:absolute;bottom:0;left:0;right:0;height:${bH}px;border:2px dashed ${c.color};border-radius:4px 4px 0 0;opacity:0.3"></div>
-        <div style="position:absolute;bottom:0;left:2px;right:2px;height:${rH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.85"></div>
-      </div>
-      <div class="bar-month-label">${m.m}</div>
-    </div>`;
-  }).join('');
-
-  const mthRows = p.monthly.map(m=>{
-    const cumpl=Math.round((m.r/m.b)*100), diff=m.r-m.b;
-    return `<tr><td>${m.m}</td><td>$${m.r}M</td><td>$${m.b}M</td><td>${pill(cumpl)}</td><td class="${diff>=0?'pos':'neg'}" style="font-family:'DM Mono',monospace;font-size:12px">${diff>=0?'+':'-'}$${Math.abs(diff)}M</td></tr>`;
-  }).join('');
-
-  const costRows = c.costos.map(x=>`
-    <div class="cost-row">
-      <div class="cost-dot" style="background:${x.color}"></div>
-      <div class="cost-name">${x.n}</div>
-      <div class="cost-pct-bar"><div class="cost-pct-fill" style="width:${x.pct}%;background:${x.color}"></div></div>
-      <div class="cost-pct-label">${x.pct}%</div>
-      <div class="cost-val">${x.v}</div>
-    </div>`).join('');
-
-  const indRows = c.indicadores.map(x=>`
-    <div class="ind-row">
-      <div class="ind-name"><span class="tl-dot ${x.pos?'tl-green':'tl-red'}"></span>${x.n}</div>
-      <div class="ind-val">${x.v}</div>
-      <div class="ind-delta ${x.pos?'pos':'neg'}">${x.delta}</div>
-    </div>`).join('');
+  document.getElementById('drawerMeta').textContent =
+    `${c.sector} · ${c.headcount} colaboradores · ${PERIOD_LABELS[currentPeriod].label}`;
 
   const cumplColor = p.cumplimiento>=90?'#059669':p.cumplimiento>=80?'#D97706':'#DC2626';
   const cumplLabel = p.cumplimiento>=90?'✓ En meta':p.cumplimiento>=80?'~ Cercano':'✗ Bajo meta';
 
-  // Subgrupos
+  // ── Helper: find row by label (nth occurrence) ───────────────
+  function findRowByLabel(label, nth=1) {
+    if (!rows) return null;
+    let count = 0;
+    for (let i=0; i<rows.length; i++) {
+      if ((rows[i][0]||'').toString().trim().toLowerCase().includes(label.toLowerCase())) {
+        count++;
+        if (count === nth) return i+1;
+      }
+    }
+    return null;
+  }
+
+  // ── Build monthly data from Google Sheets ────────────────────
+  let monthlyData = [];
+  if (rows && cfg) {
+    const realVentasRow = findRowByLabel('Ventas 2026', 1);
+    const pptoRow       = findRowByLabel('Ventas Presupuestadas', 1);
+    if (realVentasRow) {
+      for (let mi=0; mi<12; mi++) {
+        const colIdx = COL.ene + mi;
+        const real = toMillions(getVal(rows, realVentasRow, colIdx));
+        const ppto = toMillions(getVal(rows, pptoRow, colIdx));
+        if (real && real !== 0) {
+          monthlyData.push({ m: MES_LABELS[mi], r: Math.round(real), b: Math.round(ppto||0) });
+        }
+      }
+    }
+  }
+
+  // ── Bar chart ─────────────────────────────────────────────────
+  let barCols = '', mthRows = '';
+  if (monthlyData.length > 0) {
+    const maxM = Math.max(...monthlyData.map(m=>Math.max(m.r, m.b||0)));
+    barCols = monthlyData.map(m=>{
+      const rH=Math.round((m.r/maxM)*96), bH=Math.round(((m.b||0)/maxM)*96);
+      return `<div class="bar-col">
+        <div class="bar-val-label">$${m.r}M</div>
+        <div style="width:100%;position:relative;height:${Math.max(rH,bH,4)}px">
+          ${m.b?`<div style="position:absolute;bottom:0;left:0;right:0;height:${bH}px;border:2px dashed ${c.color};border-radius:4px 4px 0 0;opacity:0.3"></div>`:''}
+          <div style="position:absolute;bottom:0;left:2px;right:2px;height:${rH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.85"></div>
+        </div>
+        <div class="bar-month-label">${m.m}</div>
+      </div>`;
+    }).join('');
+
+    mthRows = monthlyData.map(m=>{
+      const cumpl = m.b ? Math.round((m.r/m.b)*100) : 0;
+      const diff  = m.b ? m.r - m.b : 0;
+      return `<tr>
+        <td>${m.m}</td>
+        <td>$${m.r}M</td>
+        <td>${m.b?'$'+m.b+'M':'—'}</td>
+        <td>${m.b?pill(cumpl):'—'}</td>
+        <td class="${diff>=0?'pos':'neg'}" style="font-family:'DM Mono',monospace;font-size:12px">
+          ${m.b?(diff>=0?'+':'')+diff+'M':'—'}
+        </td>
+      </tr>`;
+    }).join('');
+  } else {
+    barCols = `<div style="color:var(--text-muted);font-size:13px;padding:20px">Sin datos cargados para este período.</div>`;
+    mthRows = `<tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:16px">Sin datos</td></tr>`;
+  }
+
+  // ── Subgrupos ─────────────────────────────────────────────────
   let sgHTML = '';
   const sgBase = c.subgruposBase;
   const sgData = p.sg;
-  if (sgBase && sgData) {
-    const total = sgData.reduce((a,s)=>a+s.v,0);
-    const maxSg  = Math.max(...sgData.map(s=>s.v));
+  if (sgBase && sgData && rows) {
+    // Use real values from GS for the current period
+    const realVentasRow = findRowByLabel('Ventas 2026', 1);
+    const antVentasRow  = findRowByLabel('Ventas 2025', 1);
+    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const colAnt = COL.ytd; // always compare vs YTD 2025
+
+    // Detect subgroup rows (rows right after Ventas 2026)
+    let sgRowsReal = [];
+    if (realVentasRow) {
+      for (let i=realVentasRow; i<Math.min(realVentasRow+10, rows.length); i++) {
+        const label = (rows[i][0]||'').toString().trim();
+        if (!label) continue;
+        const lowerLabel = label.toLowerCase();
+        if (lowerLabel.includes('costo') || lowerLabel.includes('utilidad') || lowerLabel.includes('margen')) break;
+        if (label !== (rows[realVentasRow-1][0]||'').toString().trim()) sgRowsReal.push(i+1);
+      }
+    }
+
+    const sgValues = sgBase.map((b, i) => {
+      const rn = sgRowsReal[i];
+      const vSg = rn ? toMillions(getVal(rows, rn, col)) : null;
+      // Find ant row: same position relative to Ventas 2025
+      let vAntSg = null;
+      if (antVentasRow && rn && realVentasRow) {
+        const antRn = antVentasRow + (rn - realVentasRow);
+        vAntSg = toMillions(getVal(rows, antRn, colAnt));
+      }
+      let delta = '—'; let pos = true;
+      if (vSg !== null && vAntSg && vAntSg !== 0) {
+        const d = ((vSg - vAntSg) / Math.abs(vAntSg)) * 100;
+        delta = (d>=0?'+':'') + d.toFixed(1) + '%';
+        pos = d >= 0;
+      }
+      return { v: vSg !== null ? Math.round(vSg) : 0, delta, pos };
+    });
+
+    const total = sgValues.reduce((a,s)=>a+s.v, 0);
+    const maxSg = Math.max(...sgValues.map(s=>s.v), 1);
+
     const sgRows = sgBase.map((b,i)=>{
-      const s=sgData[i], share=Math.round((s.v/total)*100), barW=Math.round((s.v/maxSg)*100);
+      const s = sgValues[i];
+      const share = total>0 ? Math.round((s.v/total)*100) : 0;
+      const barW  = Math.round((s.v/maxSg)*100);
       return `<div class="sg-row">
         <div class="sg-name-wrap"><div class="sg-name">${b.n}</div><div class="sg-sub">${b.desc}</div></div>
         <div class="sg-bar-wrap">
@@ -828,6 +911,7 @@ function openDrawer(id) {
         <div class="sg-val">$${s.v}M</div>
       </div>`;
     }).join('');
+
     sgHTML = `<div class="detail-section">
       <div class="sg-header">
         <div class="detail-section-title" style="margin-bottom:0">Desglose por tipo de venta</div>
@@ -840,22 +924,73 @@ function openDrawer(id) {
     </div>`;
   }
 
+  // ── Costos ────────────────────────────────────────────────────
+  let costRows = '';
+  if (rows && dcfg) {
+    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const realVentasRow = findRowByLabel('Ventas 2026', 1);
+    const vTotal = realVentasRow ? toMillions(getVal(rows, realVentasRow, col)) : null;
+    const costos = [
+      { n:'Costo de Ventas', row: dcfg.cv, color: c.color },
+      { n:'Gastos Operacionales', row: dcfg.go, color: c.color+'99' },
+    ];
+    costRows = costos.map(x=>{
+      const v = x.row ? toMillions(getVal(rows, x.row, col)) : null;
+      const pct = (v && vTotal && vTotal>0) ? Math.round((v/vTotal)*100) : 0;
+      const vFmt = v !== null ? `$${Math.round(v)}M` : '—';
+      return `<div class="cost-row">
+        <div class="cost-dot" style="background:${x.color}"></div>
+        <div class="cost-name">${x.n}</div>
+        <div class="cost-pct-bar"><div class="cost-pct-fill" style="width:${pct}%;background:${x.color}"></div></div>
+        <div class="cost-pct-label">${pct}%</div>
+        <div class="cost-val">${vFmt}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Indicadores ───────────────────────────────────────────────
+  let indRows = '';
+  if (rows && dcfg) {
+    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    // EBITDA %
+    const ebitdaRow = findRowByLabel('EBITDA %', 3);
+    const ebitdaVal = ebitdaRow ? safeMargen(getVal(rows, ebitdaRow, col)) : null;
+    // DSO
+    const dsoRow = dcfg.dso;
+    const dsoVal = dsoRow ? getVal(rows, dsoRow, col) : null;
+    // Rotación
+    const rotRow = dcfg.rot;
+    const rotVal = rotRow ? safeMargen(getVal(rows, rotRow, col)) : null;
+
+    const indicadores = [];
+    if (ebitdaVal !== null) indicadores.push({ n:'EBITDA %', v: ebitdaVal.toFixed(1)+'%', pos: ebitdaVal>0 });
+    if (dsoVal !== null)    indicadores.push({ n:'Días de Cobro (DSO)', v: Math.round(dsoVal)+' días', pos: dsoVal<60 });
+    if (rotVal !== null)    indicadores.push({ n:'Rotación Inventario', v: rotVal.toFixed(1)+'%', pos: rotVal>0 });
+
+    indRows = indicadores.map(x=>`
+      <div class="ind-row">
+        <div class="ind-name"><span class="tl-dot ${x.pos?'tl-green':'tl-red'}"></span>${x.n}</div>
+        <div class="ind-val">${x.v}</div>
+        <div class="ind-delta"></div>
+      </div>`).join('');
+  }
+
+  // ── Render ────────────────────────────────────────────────────
   document.getElementById('drawerBody').innerHTML = `
     <div class="detail-kpi-strip">
       <div class="detail-kpi">
         <div class="detail-kpi-label">Ventas</div>
         <div class="detail-kpi-val" style="color:${c.color}">${p.ventas}</div>
-        <div class="detail-kpi-delta ${p.deltaVentas.startsWith('+')?'pos':'neg'}">${p.deltaVentas} vs 2025</div>
+        <div class="detail-kpi-delta ${p.deltaVentas&&p.deltaVentas.startsWith('+')?'pos':'neg'}">${p.deltaVentas||'—'} vs 2025</div>
       </div>
       <div class="detail-kpi">
         <div class="detail-kpi-label">Margen Bruto</div>
         <div class="detail-kpi-val">${p.margen}</div>
-        <div class="detail-kpi-delta ${p.deltaMargen.startsWith('+')?'pos':'neg'}">${p.deltaMargen} vs 2025</div>
+        <div class="detail-kpi-delta ${p.deltaMargen&&p.deltaMargen.startsWith('+')?'pos':'neg'}">${p.deltaMargen||'—'} vs 2025</div>
       </div>
       <div class="detail-kpi">
         <div class="detail-kpi-label">EBITDA</div>
         <div class="detail-kpi-val">${p.ebitda}</div>
-        <div class="detail-kpi-delta pos">▲ Sobre benchmark</div>
       </div>
       <div class="detail-kpi">
         <div class="detail-kpi-label">% Presupuesto</div>
@@ -870,8 +1005,12 @@ function openDrawer(id) {
       <div class="detail-section-title">Ventas mensuales — Real vs Presupuesto</div>
       <div class="bar-chart">${barCols}</div>
       <div style="display:flex;gap:16px;margin-top:10px">
-        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)"><div style="width:12px;height:12px;background:${c.color};border-radius:3px;opacity:0.85"></div>Real</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)"><div style="width:14px;height:0;border-top:2px dashed ${c.color};opacity:0.4"></div>Presupuesto</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+          <div style="width:12px;height:12px;background:${c.color};border-radius:3px;opacity:0.85"></div>Real
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+          <div style="width:14px;height:0;border-top:2px dashed ${c.color};opacity:0.4"></div>Presupuesto
+        </div>
       </div>
     </div>
 
@@ -883,15 +1022,15 @@ function openDrawer(id) {
       </table>
     </div>
 
-    <div class="detail-section">
+    ${costRows ? `<div class="detail-section">
       <div class="detail-section-title">Estructura de costos</div>
       ${costRows}
-    </div>
+    </div>` : ''}
 
-    <div class="detail-section">
+    ${indRows ? `<div class="detail-section">
       <div class="detail-section-title">Indicadores de gestión</div>
       ${indRows}
-    </div>
+    </div>` : ''}
   `;
 
   document.getElementById('drawerOverlay').classList.add('open');
