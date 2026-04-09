@@ -1509,6 +1509,12 @@ function buildCompCharts() {
   const row = document.getElementById('compChartsRow');
   row.innerHTML = '';
   const metrics = METRICS.filter(m=>activeMetrics.includes(m.id));
+  // Debug: log ventas values
+  console.log('buildCompCharts period:', currentPeriod);
+  companies.forEach(c => {
+    const p = getPeriodData(c);
+    console.log(c.name, 'ventas:', p.ventas, 'extract:', METRICS[0].extract(c,p));
+  });
   metrics.forEach(m => {
     const vals = companies.map(c=>({ c, v:m.extract(c,getPeriodData(c)) }));
     const maxV = Math.max(...vals.map(x=>x.v));
