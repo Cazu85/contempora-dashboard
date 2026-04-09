@@ -667,7 +667,7 @@ function updateSummary() {
   });
   const avgCumpl  = Math.round(totalCumpl/companies.length);
   const avgMargen = (totalMargen/companies.length).toFixed(1);
-  const totalVStr = totalV>=1000?`$${(totalV/1000).toFixed(1).replace('.',',')}B`:`$${totalV}M`;
+  const totalVStr = `$${Math.round(totalV).toLocaleString('es-CL')}M`;
 
   animSet('sumVentas', totalVStr);
   animSet('sumMargen', avgMargen+'%');
@@ -732,7 +732,12 @@ function buildCompanyCards() {
 // RANKING
 // ─────────────────────────────────────────────
 function buildRanking() {
-  const parseM = s => parseFloat(s.replace(/[$MBK,\.]/g,'').replace(',','.'))||0;
+  const parseM = s => {
+    if (!s || s === '—') return 0;
+    if (s.includes('B')) return parseFloat(s.replace(/[$B]/g,'')) * 1000;
+    // Remove $, M, and dots (thousands separators), keep digits
+    return parseFloat(s.replace(/[$M\s]/g,'').replace(/\./g,'')) || 0;
+  };
   const sorted = [...companies].sort((a,b)=>parseM(getPeriodData(b).ventas)-parseM(getPeriodData(a).ventas));
   const maxV = parseM(getPeriodData(sorted[0]).ventas);
   const list = document.getElementById('rankingList');
@@ -824,7 +829,7 @@ function openDrawer(id) {
     barCols = monthlyData.map(m=>{
       const rH=Math.round((m.r/maxM)*96), bH=Math.round(((m.b||0)/maxM)*96);
       return `<div class="bar-col">
-        <div class="bar-val-label">$${m.r}M</div>
+        <div class="bar-val-label">${fmtM(m.r)}</div>
         <div style="width:100%;position:relative;height:${Math.max(rH,bH,4)}px">
           ${m.b?`<div style="position:absolute;bottom:0;left:0;right:0;height:${bH}px;border:2px dashed ${c.color};border-radius:4px 4px 0 0;opacity:0.3"></div>`:''}
           <div style="position:absolute;bottom:0;left:2px;right:2px;height:${rH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.85"></div>
@@ -838,11 +843,11 @@ function openDrawer(id) {
       const diff  = m.b ? m.r - m.b : 0;
       return `<tr>
         <td>${m.m}</td>
-        <td>$${m.r}M</td>
-        <td>${m.b?'$'+m.b+'M':'—'}</td>
+        <td>${fmtM(m.r)}</td>
+        <td>${m.b?fmtM(m.b):'—'}</td>
         <td>${m.b?pill(cumpl):'—'}</td>
         <td class="${diff>=0?'pos':'neg'}" style="font-family:'DM Mono',monospace;font-size:12px">
-          ${m.b?(diff>=0?'+':'')+diff+'M':'—'}
+          ${m.b?(diff>=0?'+':'')+fmtM(Math.abs(diff)):'—'}
         </td>
       </tr>`;
     }).join('');
@@ -908,14 +913,14 @@ function openDrawer(id) {
             <span class="sg-delta ${s.pos?'pos':'neg'}">${s.delta} vs 2025</span>
           </div>
         </div>
-        <div class="sg-val">$${s.v}M</div>
+        <div class="sg-val">${fmtM(s.v)}</div>
       </div>`;
     }).join('');
 
     sgHTML = `<div class="detail-section">
       <div class="sg-header">
         <div class="detail-section-title" style="margin-bottom:0">Desglose por tipo de venta</div>
-        <div style="text-align:right"><div class="sg-total-label">Total ventas</div><div class="sg-total-val">$${total}M</div></div>
+        <div style="text-align:right"><div class="sg-total-label">Total ventas</div><div class="sg-total-val">${fmtM(total)}</div></div>
       </div>${sgRows}</div>`;
   } else if (c.subgruposNota) {
     sgHTML = `<div class="detail-section" style="display:flex;align-items:center;gap:12px">
@@ -937,7 +942,7 @@ function openDrawer(id) {
     costRows = costos.map(x=>{
       const v = x.row ? toMillions(getVal(rows, x.row, col)) : null;
       const pct = (v && vTotal && vTotal>0) ? Math.round((v/vTotal)*100) : 0;
-      const vFmt = v !== null ? `$${Math.round(v)}M` : '—';
+      const vFmt = v !== null ? fmtM(Math.round(v)) : '—';
       return `<div class="cost-row">
         <div class="cost-dot" style="background:${x.color}"></div>
         <div class="cost-name">${x.n}</div>
@@ -1179,8 +1184,13 @@ function safeMargen(v) {
 function fmtVentas(val) {
   if (val === null || val === undefined) return '—';
   const mVal = val > 100000 ? val / 1000000 : val;
-  const rounded = Math.round(mVal);
-  return `$${rounded.toLocaleString('es-CL')}M`;
+  return `$${Math.round(mVal).toLocaleString('es-CL')}M`;
+}
+
+// General money formatter — always in M$ with dot thousands separator
+function fmtM(val) {
+  if (val === null || val === undefined || val === 0) return '$0M';
+  return `$${Math.round(val).toLocaleString('es-CL')}M`;
 }
 
 function toMillions(val) {
@@ -1454,7 +1464,7 @@ const METRICS = [
       if (s.includes('B')) return parseFloat(s.replace(/[$B]/g,'')) * 1000;
       return parseFloat(s.replace(/[$M]/g,'').replace(/\./g,'').replace(',','.')) || 0;
     },
-    fmt: v => v>=1000 ? `$${(v/1000).toFixed(1)}B` : `$${Math.round(v)}M`,
+    fmt: v => `$${Math.round(v).toLocaleString('es-CL')}M`,
     delta: (c,p) => p.deltaVentas, higher:'better' },
   { id:'margen',       label:'Margen Bruto',  unit:'%',
     extract: (c,p) => parseFloat(p.margen)||0,
