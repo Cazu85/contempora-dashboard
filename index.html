@@ -524,7 +524,7 @@ const PERIOD_LABELS = {
 
 const companies = [
   {
-    id:'typack', name:'Typack', sector:'Industrial · Envases', color:'#2563EB', bg:'#EFF6FF', badge:'Industrial', headcount:78,
+    id:'typack', name:'Typack', sector:'Industrial · Envases', color:'#2563EB', bg:'#EFF6FF', badge:'Industrial', headcount:442,
     subgruposBase:[
       {n:'Chile',   desc:'Mercado local',           shades:['#1D4ED8','#2563EB']},
       {n:'México',  desc:'Operación internacional', shades:['#3B82F6','#60A5FA']},
@@ -533,15 +533,15 @@ const companies = [
     costos:[{n:'Costo de ventas',v:'$763M',pct:62,color:'#2563EB'},{n:'Remuneraciones',v:'$112M',pct:9,color:'#60A5FA'},{n:'Gastos Admin.',v:'$74M',pct:6,color:'#93C5FD'},{n:'Logística',v:'$62M',pct:5,color:'#BFDBFE'},{n:'Otros',v:'$229M',pct:18,color:'#DBEAFE'}],
     indicadores:[{n:'EBITDA',v:'21.4%',delta:'+1.8pp',pos:true},{n:'Rotación inventario',v:'6.2x',delta:'+0.4x',pos:true},{n:'Días de cobro',v:'38 días',delta:'-3 días',pos:true},{n:'Venta / empleado',v:'$15.9M',delta:'+38%',pos:true},{n:'Costo / venta',v:'61.5%',delta:'-2.1pp',pos:true}],
     periods:{
-      ene:{ ventas:'$310M', margen:'36.1%', ebitda:'19.2%', cumplimiento:94, deltaVentas:'+31.2%', deltaMargen:'+2.1pp', spark:[45,55,62,58,70,80,75,77], sg:[{v:185,delta:'+28%',pos:true},{v:98,delta:'+42%',pos:true},{v:27,delta:'+8%',pos:true}], monthly:[{m:'Jun',r:45,b:50},{m:'Jul',r:55,b:57},{m:'Ago',r:62,b:60},{m:'Sep',r:58,b:62},{m:'Oct',r:70,b:68},{m:'Nov',r:80,b:75},{m:'Dic',r:75,b:78},{m:'Ene',r:77,b:82}] },
-      feb:{ ventas:'$388M', margen:'37.4%', ebitda:'20.1%', cumplimiento:95, deltaVentas:'+37.6%', deltaMargen:'+2.8pp', spark:[55,62,58,70,80,75,77,95], sg:[{v:230,delta:'+33%',pos:true},{v:118,delta:'+51%',pos:true},{v:40,delta:'+9%',pos:true}], monthly:[{m:'Jul',r:55,b:57},{m:'Ago',r:62,b:60},{m:'Sep',r:58,b:62},{m:'Oct',r:70,b:68},{m:'Nov',r:80,b:75},{m:'Dic',r:75,b:78},{m:'Ene',r:77,b:82},{m:'Feb',r:95,b:100}] },
-      mar:{ ventas:'$1.240M',margen:'38.5%', ebitda:'21.4%', cumplimiento:96, deltaVentas:'+43.8%', deltaMargen:'+3.2pp', spark:[55,62,58,70,80,75,90,100],sg:[{v:620,delta:'+38.2%',pos:true},{v:480,delta:'+61.7%',pos:true},{v:140,delta:'+12%',pos:true}], monthly:[{m:'Ago',r:55,b:60},{m:'Sep',r:62,b:62},{m:'Oct',r:58,b:65},{m:'Nov',r:70,b:68},{m:'Dic',r:80,b:75},{m:'Ene',r:75,b:78},{m:'Feb',r:90,b:85},{m:'Mar',r:100,b:104}] },
-      q1: { ventas:'$3.560M',margen:'37.8%', ebitda:'20.8%', cumplimiento:95, deltaVentas:'+40.2%', deltaMargen:'+2.7pp', spark:[55,62,58,70,80,75,90,100],sg:[{v:1780,delta:'+35%',pos:true},{v:1330,delta:'+55%',pos:true},{v:450,delta:'+10%',pos:true}], monthly:[{m:'Ago',r:55,b:60},{m:'Sep',r:62,b:62},{m:'Oct',r:58,b:65},{m:'Nov',r:70,b:68},{m:'Dic',r:80,b:75},{m:'Ene',r:75,b:78},{m:'Feb',r:90,b:85},{m:'Mar',r:100,b:104}] },
-      ytd:{ ventas:'$3.560M',margen:'37.8%', ebitda:'20.8%', cumplimiento:95, deltaVentas:'+40.2%', deltaMargen:'+2.7pp', spark:[55,62,58,70,80,75,90,100],sg:[{v:1780,delta:'+35%',pos:true},{v:1330,delta:'+55%',pos:true},{v:450,delta:'+10%',pos:true}], monthly:[{m:'Ago',r:55,b:60},{m:'Sep',r:62,b:62},{m:'Oct',r:58,b:65},{m:'Nov',r:70,b:68},{m:'Dic',r:80,b:75},{m:'Ene',r:75,b:78},{m:'Feb',r:90,b:85},{m:'Mar',r:100,b:104}] },
+      ene:{ ventas:'$3.246M', margen:'12.6%', ebitda:'2.9%', cumplimiento:80, deltaVentas:'-15.3%', deltaMargen:'-6.6pp', spark:[100,101,0,0,0,0,0,0], sg:[{v:1661,delta:'-17.8%',pos:false},{v:1563,delta:'+2.4%',pos:true},{v:22,delta:'-92.2%',pos:false}], monthly:[{m:'Ene',r:3246,b:4048}] },
+      feb:{ ventas:'$3.266M', margen:'11.0%', ebitda:'3.6%', cumplimiento:86, deltaVentas:'-19.3%', deltaMargen:'-3.9pp', spark:[100,101,0,0,0,0,0,0], sg:[{v:1650,delta:'-9.7%',pos:false},{v:1439,delta:'-6.9%',pos:false},{v:177,delta:'-73.7%',pos:false}], monthly:[{m:'Feb',r:3266,b:3789}] },
+      mar:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[100,101,0,0,0,0,0,0], sg:[{v:0,delta:'—',pos:true},{v:0,delta:'—',pos:true},{v:0,delta:'—',pos:true}], monthly:[] },
+      q1: { ventas:'$6.512M', margen:'11.8%', ebitda:'3.2%', cumplimiento:83, deltaVentas:'-15.2%', deltaMargen:'-3.1pp', spark:[100,101,0,0,0,0,0,0], sg:[{v:3311,delta:'-13.7%',pos:false},{v:3001,delta:'-0.5%',pos:false},{v:199,delta:'-62.9%',pos:false}], monthly:[{m:'Ene',r:3246,b:4048},{m:'Feb',r:3266,b:3789}] },
+      ytd:{ ventas:'$6.512M', margen:'11.8%', ebitda:'3.2%', cumplimiento:83, deltaVentas:'-15.2%', deltaMargen:'-3.1pp', spark:[100,101,0,0,0,0,0,0], sg:[{v:3311,delta:'-13.7%',pos:false},{v:3001,delta:'-0.5%',pos:false},{v:199,delta:'-62.9%',pos:false}], monthly:[{m:'Ene',r:3246,b:4048},{m:'Feb',r:3266,b:3789}] },
     }
   },
   {
-    id:'masterfibra', name:'Masterfibra', sector:'Industrial · Fibra', color:'#059669', bg:'#ECFDF5', badge:'Industrial', headcount:65,
+    id:'masterfibra', name:'Masterfibra', sector:'Industrial · Fibra', color:'#059669', bg:'#ECFDF5', badge:'Industrial', headcount:67,
     subgruposBase:[
       {n:'Laminado',         desc:'Planchas y láminas',      shades:['#047857','#059669']},
       {n:'Moldeo',           desc:'Piezas moldeadas',         shades:['#059669','#10B981']},
@@ -549,14 +549,14 @@ const companies = [
       {n:'Comercialización', desc:'Venta materias primas',    shades:['#34D399','#6EE7B7']},
       {n:'Materias Primas',  desc:'Venta de insumos',         shades:['#6EE7B7','#A7F3D0']},
     ],
-    costos:[{n:'Costo de ventas',v:'$631M',pct:71,color:'#059669'},{n:'Remuneraciones',v:'$89M',pct:10,color:'#34D399'},{n:'Gastos Admin.',v:'$45M',pct:5,color:'#6EE7B7'},{n:'Logística',v:'$54M',pct:6,color:'#A7F3D0'},{n:'Otros',v:'$71M',pct:8,color:'#D1FAE5'}],
-    indicadores:[{n:'EBITDA',v:'15.8%',delta:'+0.9pp',pos:true},{n:'Rotación inventario',v:'4.8x',delta:'+0.3x',pos:true},{n:'Días de cobro',v:'45 días',delta:'+2 días',pos:false},{n:'Venta / empleado',v:'$13.7M',delta:'+18%',pos:true},{n:'Costo / venta',v:'70.9%',delta:'-1.2pp',pos:true}],
+    costos:[{n:'Costo de ventas',v:'$338M',pct:58,color:'#059669'},{n:'Gastos Operacionales',v:'$287M',pct:49,color:'#34D399'}],
+    indicadores:[{n:'EBITDA',v:'-6.8%',delta:'—',pos:false},{n:'Días de cobro',v:'46 días',delta:'—',pos:true},{n:'Rotación inventario',v:'20.3%',delta:'—',pos:true}],
     periods:{
-      ene:{ ventas:'$218M', margen:'27.4%', ebitda:'13.9%', cumplimiento:85, deltaVentas:'+14.2%', deltaMargen:'+0.8pp', spark:[35,40,48,52,55,60,68,68], sg:[{v:42,delta:'+18%',pos:true},{v:28,delta:'+12%',pos:true},{v:55,delta:'+22%',pos:true},{v:58,delta:'+8%',pos:true},{v:35,delta:'+11%',pos:true}], monthly:[{m:'Jun',r:35,b:40},{m:'Jul',r:40,b:44},{m:'Ago',r:48,b:50},{m:'Sep',r:52,b:55},{m:'Oct',r:55,b:58},{m:'Nov',r:60,b:65},{m:'Dic',r:68,b:70},{m:'Ene',r:68,b:80}] },
-      feb:{ ventas:'$294M', margen:'28.3%', ebitda:'14.8%', cumplimiento:87, deltaVentas:'+18.0%', deltaMargen:'+1.2pp', spark:[40,48,52,55,60,68,68,74], sg:[{v:58,delta:'+22%',pos:true},{v:38,delta:'+15%',pos:true},{v:74,delta:'+26%',pos:true},{v:78,delta:'+10%',pos:true},{v:46,delta:'+14%',pos:true}], monthly:[{m:'Jul',r:40,b:44},{m:'Ago',r:48,b:50},{m:'Sep',r:52,b:55},{m:'Oct',r:55,b:58},{m:'Nov',r:60,b:65},{m:'Dic',r:68,b:70},{m:'Ene',r:68,b:80},{m:'Feb',r:74,b:85}] },
-      mar:{ ventas:'$890M', margen:'29.1%', ebitda:'15.8%', cumplimiento:88, deltaVentas:'+21.3%', deltaMargen:'+1.5pp', spark:[40,48,52,55,60,68,72,80], sg:[{v:178,delta:'+24%',pos:true},{v:115,delta:'+18%',pos:true},{v:224,delta:'+28%',pos:true},{v:232,delta:'+14%',pos:true},{v:141,delta:'+16%',pos:true}], monthly:[{m:'Ago',r:40,b:45},{m:'Sep',r:48,b:50},{m:'Oct',r:52,b:55},{m:'Nov',r:55,b:58},{m:'Dic',r:60,b:65},{m:'Ene',r:68,b:70},{m:'Feb',r:72,b:75},{m:'Mar',r:80,b:91}] },
-      q1: { ventas:'$2.460M',margen:'28.7%', ebitda:'15.2%', cumplimiento:86, deltaVentas:'+19.2%', deltaMargen:'+1.2pp', spark:[40,48,52,55,60,68,72,80], sg:[{v:492,delta:'+21%',pos:true},{v:318,delta:'+15%',pos:true},{v:619,delta:'+25%',pos:true},{v:640,delta:'+11%',pos:true},{v:391,delta:'+13%',pos:true}], monthly:[{m:'Ago',r:40,b:45},{m:'Sep',r:48,b:50},{m:'Oct',r:52,b:55},{m:'Nov',r:55,b:58},{m:'Dic',r:60,b:65},{m:'Ene',r:68,b:70},{m:'Feb',r:72,b:75},{m:'Mar',r:80,b:91}] },
-      ytd:{ ventas:'$2.460M',margen:'28.7%', ebitda:'15.2%', cumplimiento:86, deltaVentas:'+19.2%', deltaMargen:'+1.2pp', spark:[40,48,52,55,60,68,72,80], sg:[{v:492,delta:'+21%',pos:true},{v:318,delta:'+15%',pos:true},{v:619,delta:'+25%',pos:true},{v:640,delta:'+11%',pos:true},{v:391,delta:'+13%',pos:true}], monthly:[{m:'Ago',r:40,b:45},{m:'Sep',r:48,b:50},{m:'Oct',r:52,b:55},{m:'Nov',r:55,b:58},{m:'Dic',r:60,b:65},{m:'Ene',r:68,b:70},{m:'Feb',r:72,b:75},{m:'Mar',r:80,b:91}] },
+      ene:{ ventas:'$345M', margen:'43.2%', ebitda:'2.9%', cumplimiento:78, deltaVentas:'-10.8%', deltaMargen:'+16.4pp', spark:[100,70,0,0,0,0,0,0], sg:[{v:173,delta:'+37.0%',pos:true},{v:36,delta:'+69.9%',pos:true},{v:90,delta:'-20.7%',pos:false},{v:6,delta:'-88.2%',pos:false},{v:40,delta:'-43.7%',pos:false}], monthly:[{m:'Ene',r:345,b:443}] },
+      feb:{ ventas:'$241M', margen:'41.0%', ebitda:'-20.7%', cumplimiento:50, deltaVentas:'-37.8%', deltaMargen:'+5.0pp', spark:[100,70,0,0,0,0,0,0], sg:[{v:40,delta:'-60.4%',pos:false},{v:42,delta:'+1163%',pos:true},{v:75,delta:'-54.0%',pos:false},{v:71,delta:'-17.5%',pos:false},{v:13,delta:'-61.8%',pos:false}], monthly:[{m:'Feb',r:241,b:483}] },
+      mar:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[100,70,0,0,0,0,0,0], sg:[{v:0,delta:'—',pos:true},{v:0,delta:'—',pos:true},{v:0,delta:'—',pos:true},{v:0,delta:'—',pos:true},{v:0,delta:'—',pos:true}], monthly:[] },
+      q1: { ventas:'$586M', margen:'42.3%', ebitda:'-6.8%', cumplimiento:63, deltaVentas:'-19.4%', deltaMargen:'+11.2pp', spark:[100,70,0,0,0,0,0,0], sg:[{v:212,delta:'+65.5%',pos:true},{v:78,delta:'+39.2%',pos:true},{v:165,delta:'-31.4%',pos:false},{v:78,delta:'-88.8%',pos:false},{v:53,delta:'-52.4%',pos:false}], monthly:[{m:'Ene',r:345,b:443},{m:'Feb',r:241,b:483}] },
+      ytd:{ ventas:'$586M', margen:'42.3%', ebitda:'-6.8%', cumplimiento:63, deltaVentas:'-19.4%', deltaMargen:'+11.2pp', spark:[100,70,0,0,0,0,0,0], sg:[{v:212,delta:'+65.5%',pos:true},{v:78,delta:'+39.2%',pos:true},{v:165,delta:'-31.4%',pos:false},{v:78,delta:'-88.8%',pos:false},{v:53,delta:'-52.4%',pos:false}], monthly:[{m:'Ene',r:345,b:443},{m:'Feb',r:241,b:483}] },
     }
   },
   {
@@ -656,30 +656,69 @@ function updateSummary() {
   document.getElementById('bvrTitle').textContent      = `Real vs Presupuesto — ${pl.label}`;
   document.getElementById('sectionLabel').textContent  = `Empresas del Grupo — ${pl.label} · clic para ver detalle`;
 
-  // Aggregate ventas (parse raw number from string like '$1.240M' or '$3.560M')
-  const parseM = s => { const n=parseFloat(s.replace(/[$M]/g,'').replace(/\./g,'').replace(',','.')); return isNaN(n)?0:n; };
-  let totalV=0, totalCumpl=0, totalMargen=0;
-  companies.forEach(c=>{
-    const p=getPeriodData(c);
-    totalV      += parseM(p.ventas);
-    totalCumpl  += p.cumplimiento;
-    totalMargen += parseFloat(p.margen);
+  const parseM = s => {
+    if (!s || s === '—') return 0;
+    return parseFloat(s.replace(/[$M\s]/g,'').replace(/\./g,'')) || 0;
+  };
+
+  // Only include companies with real data (ventas > 0)
+  const activeCompanies = companies.filter(c => parseM(getPeriodData(c).ventas) > 0);
+
+  let totalV = 0, totalVAnt = 0, totalCumpl = 0, totalMargen = 0, cumplCount = 0;
+
+  companies.forEach(c => {
+    const p = getPeriodData(c);
+    totalV += parseM(p.ventas);
   });
-  const avgCumpl  = Math.round(totalCumpl/companies.length);
-  const avgMargen = (totalMargen/companies.length).toFixed(1);
+
+  activeCompanies.forEach(c => {
+    const p = getPeriodData(c);
+    // Delta ventas vs 2025 — reconstruct absolute value from delta %
+    const vReal = parseM(p.ventas);
+    if (p.deltaVentas && p.deltaVentas !== '—') {
+      const pct = parseFloat(p.deltaVentas) / 100;
+      if (!isNaN(pct)) totalVAnt += vReal / (1 + pct);
+    }
+    // Cumplimiento — only companies with data
+    if (p.cumplimiento > 0) {
+      totalCumpl += p.cumplimiento;
+      cumplCount++;
+    }
+    totalMargen += parseFloat(p.margen) || 0;
+  });
+
+  const avgCumpl  = cumplCount > 0 ? Math.round(totalCumpl / cumplCount) : 0;
+  const avgMargen = activeCompanies.length > 0 ? (totalMargen / activeCompanies.length).toFixed(1) : '0.0';
   const totalVStr = `$${Math.round(totalV).toLocaleString('es-CL')}M`;
 
+  // Delta ventas consolidado vs 2025
+  let vDeltaStr = '—';
+  if (totalVAnt > 0) {
+    const d = ((totalV - totalVAnt) / totalVAnt) * 100;
+    vDeltaStr = (d >= 0 ? '↑ +' : '↓ ') + d.toFixed(1) + '% vs 2025';
+  }
+
+  // Delta margen — promedio de deltas individuales de empresas activas
+  let mDeltaStr = '—';
+  const margenes = activeCompanies.map(c => {
+    const p = getPeriodData(c);
+    if (p.deltaMargen && p.deltaMargen !== '—') return parseFloat(p.deltaMargen);
+    return null;
+  }).filter(v => v !== null);
+  if (margenes.length > 0) {
+    const avgDelta = margenes.reduce((a,b) => a+b, 0) / margenes.length;
+    mDeltaStr = (avgDelta >= 0 ? '↑ +' : '↓ ') + avgDelta.toFixed(1) + 'pp vs 2025';
+  }
+
   animSet('sumVentas', totalVStr);
-  animSet('sumMargen', avgMargen+'%');
-  animSet('sumCumplimiento', avgCumpl+'%');
+  animSet('sumMargen', avgMargen + '%');
+  animSet('sumCumplimiento', avgCumpl > 0 ? avgCumpl + '%' : '—');
+  animSet('sumHeadcount', companies.reduce((a,c) => a + (c.headcount||0), 0) + ' pers.');
 
-  const vDelta = currentPeriod==='ene'?'+14.8%':currentPeriod==='feb'?'+19.2%':currentPeriod==='mar'?'+18.4%':'+17.8%';
-  const mDelta = currentPeriod==='ene'?'+1.2pp':currentPeriod==='feb'?'+1.7pp':currentPeriod==='mar'?'+2.1pp':'+1.7pp';
-  const cDelta = avgCumpl>=90?`↑ ${100-avgCumpl}pp bajo meta`:`↓ ${100-avgCumpl}pp bajo meta`;
-
-  setDelta('sumVentasDelta', `↑ ${vDelta} vs 2025`, true);
-  setDelta('sumMargenDelta', `↑ ${mDelta} vs 2025`, true);
-  setDelta('sumCumplimientoDelta', cDelta, avgCumpl>=90);
+  setDelta('sumVentasDelta', vDeltaStr, totalV >= totalVAnt);
+  setDelta('sumMargenDelta', mDeltaStr, margenes.length > 0 && margenes.reduce((a,b)=>a+b,0) >= 0);
+  const cDelta = avgCumpl >= 90 ? `↑ En meta` : avgCumpl > 0 ? `↓ ${100 - avgCumpl}pp bajo meta` : '—';
+  setDelta('sumCumplimientoDelta', cDelta, avgCumpl >= 90);
 }
 
 function animSet(id, val) {
