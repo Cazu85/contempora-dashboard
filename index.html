@@ -900,11 +900,18 @@ function openDrawer(id) {
   const sgBase = c.subgruposBase;
   const sgData = p.sg;
   if (sgBase && sgData && rows) {
-    // Use real values from GS for the current period
     const realVentasRow = findRowByLabel('Ventas 2026', 1);
     const antVentasRow  = findRowByLabel('Ventas 2025', 1);
     const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
-    const colAnt = COL.ytd; // always compare vs YTD 2025
+
+    // Detect last month with real data
+    let lastMonthWithData = null;
+    if (realVentasRow) {
+      for (let mi = 0; mi < 12; mi++) {
+        const v = getVal(rows, realVentasRow, COL.ene + mi);
+        if (v && v !== 0) lastMonthWithData = COL.ene + mi;
+      }
+    }
 
     // Detect subgroup rows (rows right after Ventas 2026)
     let sgRowsReal = [];
@@ -921,11 +928,17 @@ function openDrawer(id) {
     const sgValues = sgBase.map((b, i) => {
       const rn = sgRowsReal[i];
       const vSg = rn ? toMillions(getVal(rows, rn, col)) : null;
-      // Find ant row: same position relative to Ventas 2025
+
+      // For 2025 comparison: sum same months as real data (not YTD annual)
       let vAntSg = null;
-      if (antVentasRow && rn && realVentasRow) {
+      if (antVentasRow && rn && realVentasRow && lastMonthWithData) {
         const antRn = antVentasRow + (rn - realVentasRow);
-        vAntSg = toMillions(getVal(rows, antRn, colAnt));
+        let sumAnt = 0;
+        for (let ci = COL.ene; ci <= lastMonthWithData; ci++) {
+          const v = toMillions(getVal(rows, antRn, ci));
+          if (v) sumAnt += v;
+        }
+        vAntSg = sumAnt > 0 ? sumAnt : null;
       }
       let delta = '—'; let pos = true;
       if (vSg !== null && vAntSg && vAntSg !== 0) {
