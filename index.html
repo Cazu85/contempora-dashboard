@@ -987,12 +987,17 @@ function openDrawer(id) {
     const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
     const realVentasRow = findRowByLabel('Ventas 2026', 1);
     const vTotal = realVentasRow ? toMillions(getVal(rows, realVentasRow, col)) : null;
-    // Find cost rows by label (3rd occurrence = real 2026 block)
-    let cvCount = 0, goCount = 0, cvRow = null, goRow = null;
-    for (let i = 0; i < rows.length; i++) {
-      const a = (rows[i][0]||'').toString().trim().toLowerCase();
-      if (a.includes('costo de ventas')) { cvCount++; if (cvCount === 3) cvRow = i+1; }
-      if (a.includes('gastos operacionales')) { goCount++; if (goCount === 3) goRow = i+1; }
+    // Find cost rows relative to Ventas 2026 position (more reliable than nth occurrence)
+    const realVentasRowCost = findRowByLabel('Ventas 2026', 1);
+    let cvRow = null, goRow = null;
+    if (realVentasRowCost) {
+      // Search for Costo de Ventas and Gastos Operacionales AFTER Ventas 2026 row
+      for (let i = realVentasRowCost; i < Math.min(realVentasRowCost + 20, rows.length); i++) {
+        const a = (rows[i][0]||'').toString().trim().toLowerCase();
+        if (a.includes('costo de ventas') && !cvRow) cvRow = i+1;
+        if (a.includes('gastos operacionales') && !goRow) goRow = i+1;
+        if (cvRow && goRow) break;
+      }
     }
     const costos = [
       { n:'Costo de Ventas', row: cvRow, color: c.color },
@@ -1005,7 +1010,7 @@ function openDrawer(id) {
       return `<div class="cost-row">
         <div class="cost-dot" style="background:${x.color}"></div>
         <div class="cost-name">${x.n}</div>
-        <div class="cost-pct-bar"><div class="cost-pct-fill" style="width:${pct}%;background:${x.color}"></div></div>
+        <div class="cost-pct-bar"><div class="cost-pct-fill" style="width:${Math.min(pct,100)}%;background:${x.color}"></div></div>
         <div class="cost-pct-label">${pct}%</div>
         <div class="cost-val">${vFmt}</div>
       </div>`;
