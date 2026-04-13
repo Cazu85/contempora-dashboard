@@ -987,9 +987,16 @@ function openDrawer(id) {
     const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
     const realVentasRow = findRowByLabel('Ventas 2026', 1);
     const vTotal = realVentasRow ? toMillions(getVal(rows, realVentasRow, col)) : null;
+    // Find cost rows by label (3rd occurrence = real 2026 block)
+    let cvCount = 0, goCount = 0, cvRow = null, goRow = null;
+    for (let i = 0; i < rows.length; i++) {
+      const a = (rows[i][0]||'').toString().trim().toLowerCase();
+      if (a.includes('costo de ventas')) { cvCount++; if (cvCount === 3) cvRow = i+1; }
+      if (a.includes('gastos operacionales')) { goCount++; if (goCount === 3) goRow = i+1; }
+    }
     const costos = [
-      { n:'Costo de Ventas', row: dcfg.cv, color: c.color },
-      { n:'Gastos Operacionales', row: dcfg.go, color: c.color+'99' },
+      { n:'Costo de Ventas', row: cvRow, color: c.color },
+      { n:'Gastos Operacionales', row: goRow, color: c.color+'99' },
     ];
     costRows = costos.map(x=>{
       const v = x.row ? toMillions(getVal(rows, x.row, col)) : null;
@@ -1068,9 +1075,10 @@ function openDrawer(id) {
       // Proyección = YTD real × factor estacionalidad × (1 + crecimiento Chile)
       const proyAnual = Math.round(ytdReal * factorEstacionalidad * (1 + CRECIMIENTO_CHILE));
 
-      // Presupuesto anual
+      // Presupuesto anual — use YTD col (O) which has the annual total, fallback to col B
       const pptoRow = findRowByLabel('Ventas Presupuestadas', 1);
-      const pptoAnual = toMillions(getVal(rows, pptoRow, COL.anual)) || 0;
+      const pptoAnual = toMillions(getVal(rows, pptoRow, COL.ytd)) ||
+                        toMillions(getVal(rows, pptoRow, COL.anual)) || 0;
 
       // Diferencias
       const diffVsPpto = proyAnual - Math.round(pptoAnual);
