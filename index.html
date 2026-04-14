@@ -451,11 +451,7 @@
         <div id="rankingList"></div>
       </div>
       <div class="panel">
-        <div class="panel-title" id="bvrTitle">Real vs Presupuesto</div>
-        <div class="bvr-legend">
-          <div class="bvr-leg-item"><div class="bvr-leg-dot" style="background:#1a1916"></div>Real</div>
-          <div class="bvr-leg-item"><div class="bvr-leg-dot" style="background:#b5b2aa"></div>Presupuesto</div>
-        </div>
+        <div class="panel-title" id="bvrTitle">Estructura de resultados</div>
         <div id="bvrList"></div>
       </div>
     </div>
@@ -767,10 +763,30 @@ function buildCompanyCards() {
         </div>
         <div style="font-size:11px;font-family:'DM Mono',monospace;color:${p.cumplimiento>=90?'#059669':p.cumplimiento>=80?'#D97706':'#DC2626'};font-weight:600;background:${p.cumplimiento>=90?'#ECFDF5':p.cumplimiento>=80?'#FFFBEB':'#FEF2F2'};padding:4px 9px;border-radius:20px">${p.cumplimiento}% ppto</div>
       </div>
+    // Get EBITDA monto from GS
+    let ebitdaMonto = '—';
+    const cRows = gsDataCache[c.name];
+    if (cRows) {
+      // Find EBITDA row (3rd occurrence = real 2026 block)
+      let ec = 0, ebitdaRow = null;
+      for (let i=0; i<cRows.length; i++) {
+        if ((cRows[i][0]||'').toString().trim().toLowerCase().startsWith('ebitda  (')) {
+          ec++;
+          if (ec === 3) { ebitdaRow = i+1; break; }
+        }
+      }
+      if (ebitdaRow) {
+        const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+        const v = toMillions(getVal(cRows, ebitdaRow, col));
+        if (v !== null) ebitdaMonto = fmtM(Math.round(v));
+      }
+    }
+
       <div class="card-kpis">
         <div><div class="kpi-label">Ventas</div><div class="kpi-value">${p.ventas}</div><div class="kpi-delta ${posV?'pos':'neg'}">${p.deltaVentas} vs 2025</div></div>
         <div><div class="kpi-label">Margen</div><div class="kpi-value">${p.margen}</div><div class="kpi-delta ${posM?'pos':'neg'}">${p.deltaMargen} vs 2025</div></div>
-        <div><div class="kpi-label">EBITDA</div><div class="kpi-value" style="color:${posE?'#059669':'#DC2626'}">${p.ebitda}</div></div>
+        <div><div class="kpi-label">EBITDA %</div><div class="kpi-value" style="color:${posE?'#059669':'#DC2626'}">${p.ebitda}</div></div>
+        <div><div class="kpi-label">EBITDA M$</div><div class="kpi-value" style="color:${posE?'#059669':'#DC2626'}">${ebitdaMonto}</div></div>
         <div><div class="kpi-label">Dotación</div><div class="kpi-value">${c.headcount > 0 ? c.headcount+' pers.' : '—'}</div></div>
       </div>`;
     el.addEventListener('click', () => openDrawer(c.id));
@@ -834,20 +850,26 @@ function buildRanking() {
       pptoYTD = Math.round(pptoYTD);
     }
 
-    // Real 2025 total anual
-    const real2025val = toMillions(getVal(rows, antVentasRow, COL.ytd));
-    const real2025 = real2025val ? Math.round(real2025val) : 0;
+    // Real 2025 total anual (col O)
+    const totalAnt2025 = toMillions(getVal(rows, antVentasRow, COL.ytd)) || 0;
+    const real2025 = totalAnt2025 > 0 ? Math.round(totalAnt2025) : 0;
 
-    // Proyección anual
+    // Real 2025 acumulado mismo período que 2026 (Ene+Feb)
+    let acumAnt2025 = 0;
+    for (let ci = COL.ene; ci <= lastCol; ci++) {
+      const v = toMillions(getVal(rows, antVentasRow, ci));
+      if (v) acumAnt2025 += v;
+    }
+
+    // Proyección: YTD real × (total 2025 / acum mismo período 2025) × (1 + crec)
     const ytdReal = toMillions(getVal(rows, realVentasRow, COL.ytd)) || 0;
-    const totalAnt = toMillions(getVal(rows, antVentasRow, COL.ytd)) || 0;
-    const factorEst = real2025 > 0 ? totalAnt / real2025 : 12;
+    const factorEst = acumAnt2025 > 0 ? totalAnt2025 / acumAnt2025 : 6;
     const proyAnual = Math.round(ytdReal * factorEst * (1 + CRECIMIENTO));
 
     return {
-      pptoYTD:  pptoYTD  > 0 ? Math.round(pptoYTD)  : null,
-      real2025: real2025 > 0 ? Math.round(real2025)  : null,
-      proyAnual: proyAnual > 0 ? proyAnual : null,
+      pptoAnual: pptoYTD  > 0 ? Math.round(pptoYTD)   : null,
+      real2025:  real2025 > 0 ? Math.round(real2025)   : null,
+      proyAnual: proyAnual > 0 ? proyAnual              : null,
     };
   }
 
@@ -866,17 +888,17 @@ function buildRanking() {
     const extra = getExtraData(c);
 
     totalYTD  += v;
-    if (extra.pptoYTD)  totalPpto += extra.pptoYTD;
+    if (extra.pptoAnual)  totalPpto += extra.pptoAnual;
     if (extra.real2025) totalAnt  += extra.real2025;
     if (extra.proyAnual) totalProy += extra.proyAnual;
 
-    const pptoStr  = extra.pptoYTD  ? fmtM(extra.pptoYTD)  : '—';
+    const pptoStr  = extra.pptoAnual  ? fmtM(extra.pptoAnual)  : '—';
     const antStr   = extra.real2025 ? fmtM(extra.real2025)  : '—';
     const proyStr  = extra.proyAnual ? fmtM(extra.proyAnual) : '—';
 
     // Color ppto comparison
-    const pptoColor = extra.pptoYTD && v > 0
-      ? (v >= extra.pptoYTD ? '#059669' : '#DC2626')
+    const pptoColor = extra.pptoAnual && v > 0
+      ? (v >= extra.pptoAnual ? '#059669' : '#DC2626')
       : 'var(--text-muted)';
 
     list.innerHTML += `
