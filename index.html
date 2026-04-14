@@ -990,7 +990,7 @@ function buildBVR() {
       if (a.startsWith('intereses') && !intRow)           intRow=i+1;
       if (a.startsWith('ebt %') && !ebtPctRow)           ebtPctRow=i+1;
       if (a.startsWith('resultado neto %') && !netPctRow) netPctRow=i+1;
-      if (vRow && i > vRow+20) break;
+      if (vRow && i > vRow+30) break;
     }
     const gp = row => {
       if (!row) return null;
@@ -1300,7 +1300,7 @@ function openDrawer(id) {
       if (a.startsWith('ebt %') && !ebtPctRow) ebtPctRow=i+1;
       if (a.startsWith('resultado neto  (') && !netRow) netRow=i+1;
       if (a.startsWith('resultado neto %') && !netPctRow) netPctRow=i+1;
-      if (vRow && i > vRow+20) break;
+      if (vRow && i > vRow+30) break;
     }
 
     const gv = row => row ? toMillions(getVal(rows, row, col)) : null;
