@@ -79,6 +79,16 @@
   .rank-val { font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 500; }
   .rank-bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
   .rank-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  /* Extended ranking */
+  .rank-metrics { display: flex; gap: 14px; margin-top: 3px; }
+  .rank-metric { text-align: right; min-width: 70px; }
+  .rank-metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); }
+  .rank-metric-val { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text-muted); }
+  .rank-metric-val.rank-main { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ranking-totals { margin-top: 14px; padding-top: 12px; border-top: 2px solid var(--border); display: flex; gap: 14px; justify-content: flex-end; }
+  .ranking-total-col { text-align: right; min-width: 70px; }
+  .ranking-total-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); margin-bottom: 2px; }
+  .ranking-total-val { font-size: 12px; font-family: 'DM Mono', monospace; font-weight: 600; color: var(--text); }
   .bvr-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .bvr-row:last-child { border-bottom: none; }
   .bvr-name { font-size: 12.5px; width: 130px; flex-shrink: 0; font-weight: 500; }
@@ -774,18 +784,152 @@ function buildRanking() {
   const parseM = s => {
     if (!s || s === '—') return 0;
     if (s.includes('B')) return parseFloat(s.replace(/[$B]/g,'')) * 1000;
-    // Remove $, M, and dots (thousands separators), keep digits
     return parseFloat(s.replace(/[$M\s]/g,'').replace(/\./g,'')) || 0;
   };
+
+  const CRECIMIENTO = 0.025;
+
+  // Calculate ppto YTD, real 2025 YTD, and proyección for each company
+  function getExtraData(c) {
+    const rows = gsDataCache[c.name];
+    const cfg  = SHEET_CONFIG[c.name];
+    if (!rows || !cfg) return { pptoYTD: null, real2025: null, proyAnual: null };
+
+    function findRow(label, nth=1) {
+      let count = 0;
+      for (let i=0; i<rows.length; i++) {
+        if ((rows[i][0]||'').toString().trim().toLowerCase().includes(label.toLowerCase())) {
+          count++;
+          if (count === nth) return i+1;
+        }
+      }
+      return null;
+    }
+
+    const realVentasRow = findRow('Ventas 2026');
+    const antVentasRow  = findRow('Ventas 2025');
+    const pptoRow       = findRow('Ventas Presupuestadas');
+
+    // Detect last month with data
+    let lastCol = null;
+    if (realVentasRow) {
+      for (let ci = COL.ene; ci <= COL.dic; ci++) {
+        const v = getVal(rows, realVentasRow, ci);
+        if (v && v !== 0) lastCol = ci;
+      }
+    }
+    if (!lastCol) return { pptoYTD: null, real2025: null, proyAnual: null };
+
+    // Ppto acumulado mismo período
+    let pptoYTD = 0;
+    for (let ci = COL.ene; ci <= lastCol; ci++) {
+      const v = toMillions(getVal(rows, pptoRow, ci));
+      if (v) pptoYTD += v;
+    }
+
+    // Real 2025 mismo período
+    let real2025 = 0;
+    for (let ci = COL.ene; ci <= lastCol; ci++) {
+      const v = toMillions(getVal(rows, antVentasRow, ci));
+      if (v) real2025 += v;
+    }
+
+    // Proyección anual
+    const ytdReal = toMillions(getVal(rows, realVentasRow, COL.ytd)) || 0;
+    const totalAnt = toMillions(getVal(rows, antVentasRow, COL.ytd)) || 0;
+    const factorEst = real2025 > 0 ? totalAnt / real2025 : 12;
+    const proyAnual = Math.round(ytdReal * factorEst * (1 + CRECIMIENTO));
+
+    return {
+      pptoYTD:  pptoYTD  > 0 ? Math.round(pptoYTD)  : null,
+      real2025: real2025 > 0 ? Math.round(real2025)  : null,
+      proyAnual: proyAnual > 0 ? proyAnual : null,
+    };
+  }
+
   const sorted = [...companies].sort((a,b)=>parseM(getPeriodData(b).ventas)-parseM(getPeriodData(a).ventas));
-  const maxV = parseM(getPeriodData(sorted[0]).ventas);
+  const maxV = parseM(getPeriodData(sorted[0]).ventas) || 1;
   const list = document.getElementById('rankingList');
   list.innerHTML = '';
+
+  // Totals
+  let totalYTD=0, totalPpto=0, totalAnt=0, totalProy=0;
+
   sorted.forEach((c,i)=>{
-    const v=getPeriodData(c).ventas;
-    const pct = Math.round((parseM(v)/maxV)*100);
-    list.innerHTML += `<div class="ranking-row"><div class="rank-num">${i+1}</div><div class="rank-color" style="background:${c.color}"></div><div class="rank-name">${c.name.replace('Contempora ','')}</div><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${pct}%;background:${c.color}"></div></div><div class="rank-val">${v}</div></div>`;
+    const p = getPeriodData(c);
+    const v = parseM(p.ventas);
+    const pct = Math.round((v/maxV)*100);
+    const extra = getExtraData(c);
+
+    totalYTD  += v;
+    if (extra.pptoYTD)  totalPpto += extra.pptoYTD;
+    if (extra.real2025) totalAnt  += extra.real2025;
+    if (extra.proyAnual) totalProy += extra.proyAnual;
+
+    const pptoStr  = extra.pptoYTD  ? fmtM(extra.pptoYTD)  : '—';
+    const antStr   = extra.real2025 ? fmtM(extra.real2025)  : '—';
+    const proyStr  = extra.proyAnual ? fmtM(extra.proyAnual) : '—';
+
+    // Color ppto comparison
+    const pptoColor = extra.pptoYTD && v > 0
+      ? (v >= extra.pptoYTD ? '#059669' : '#DC2626')
+      : 'var(--text-muted)';
+
+    list.innerHTML += `
+      <div class="ranking-row">
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-color" style="background:${c.color}"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div class="rank-name" style="flex:1">${c.name.replace('Contempora ','')}</div>
+            <div class="rank-metric-val rank-main" style="color:${c.color}">${p.ventas}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <div class="rank-bar-wrap" style="flex:1;width:auto">
+              <div class="rank-bar-fill" style="width:${pct}%;background:${c.color}"></div>
+            </div>
+          </div>
+          <div class="rank-metrics">
+            <div class="rank-metric">
+              <div class="rank-metric-label">Ppto YTD</div>
+              <div class="rank-metric-val" style="color:${pptoColor}">${pptoStr}</div>
+            </div>
+            <div class="rank-metric">
+              <div class="rank-metric-label">Real 2025</div>
+              <div class="rank-metric-val">${antStr}</div>
+            </div>
+            <div class="rank-metric">
+              <div class="rank-metric-label">Proy. 2026</div>
+              <div class="rank-metric-val" style="color:${c.color}">${proyStr}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
   });
+
+  // Totals row
+  const hasData = totalYTD > 0;
+  if (hasData) {
+    list.innerHTML += `
+      <div class="ranking-totals">
+        <div class="ranking-total-col">
+          <div class="ranking-total-label">YTD 2026</div>
+          <div class="ranking-total-val">${fmtM(Math.round(totalYTD))}</div>
+        </div>
+        <div class="ranking-total-col">
+          <div class="ranking-total-label">Ppto YTD</div>
+          <div class="ranking-total-val">${totalPpto > 0 ? fmtM(totalPpto) : '—'}</div>
+        </div>
+        <div class="ranking-total-col">
+          <div class="ranking-total-label">Real 2025</div>
+          <div class="ranking-total-val">${totalAnt > 0 ? fmtM(totalAnt) : '—'}</div>
+        </div>
+        <div class="ranking-total-col">
+          <div class="ranking-total-label">Proy. 2026</div>
+          <div class="ranking-total-val">${totalProy > 0 ? fmtM(totalProy) : '—'}</div>
+        </div>
+      </div>`;
+  }
 }
 
 // ─────────────────────────────────────────────
