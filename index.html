@@ -975,101 +975,90 @@ function buildBVR() {
     return;
   }
 
-  // Read waterfall data from GS for each company
   function getWaterfall(c) {
     const rows = gsDataCache[c.name];
     if (!rows) return null;
     const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
-
-    // Find real 2026 block rows by searching after 'Ventas 2026'
-    let vRow=null, mbRow=null, mbPctRow=null, ebitdaRow=null, ebitdaPctRow=null, intRow=null, ebtRow=null, ebtPctRow=null, netRow=null, netPctRow=null;
+    let vRow=null, mbPctRow=null, ebitdaPctRow=null, intRow=null, ebtPctRow=null, netPctRow=null;
     let inBlock = false;
-    let mbCount=0, ebitdaCount=0, ebtCount=0, netCount=0;
-
     for (let i=0; i<rows.length; i++) {
       const a = (rows[i][0]||'').toString().trim().toLowerCase();
       if (a.startsWith('ventas 2026')) { inBlock=true; vRow=i+1; continue; }
       if (!inBlock) continue;
-      if (a.startsWith('utilidad bruta') && !mbRow) mbRow=i+1;
-      if (a.startsWith('margen bruto %') && !mbPctRow) mbPctRow=i+1;
-      if (a.startsWith('ebitda  (') && !ebitdaRow) ebitdaRow=i+1;
-      if (a.startsWith('ebitda %') && !ebitdaPctRow) ebitdaPctRow=i+1;
-      if (a.startsWith('intereses') && !intRow) intRow=i+1;
-      if (a.startsWith('ebt —') && !ebtRow) ebtRow=i+1;
-      if (a.startsWith('ebt %') && !ebtPctRow) ebtPctRow=i+1;
-      if (a.startsWith('resultado neto  (') && !netRow) netRow=i+1;
+      if (a.startsWith('margen bruto %') && !mbPctRow)   mbPctRow=i+1;
+      if (a.startsWith('ebitda %') && !ebitdaPctRow)     ebitdaPctRow=i+1;
+      if (a.startsWith('intereses') && !intRow)           intRow=i+1;
+      if (a.startsWith('ebt %') && !ebtPctRow)           ebtPctRow=i+1;
       if (a.startsWith('resultado neto %') && !netPctRow) netPctRow=i+1;
-      // Stop at next major block
-      if (inBlock && vRow && i > vRow+20) break;
+      if (vRow && i > vRow+20) break;
     }
-
-    const g = row => row ? toMillions(getVal(rows, row, col)) : null;
-    const pct = row => {
+    const gp = row => {
       if (!row) return null;
       const v = getVal(rows, row, col);
       return v !== null ? safeMargen(v) : null;
     };
-
+    const gv = row => row ? toMillions(getVal(rows, row, col)) : null;
+    const ventas = gv(vRow);
+    const intereses = gv(intRow);
+    const intPct = (intereses !== null && ventas && ventas > 0) ? (intereses/ventas)*100 : null;
     return {
-      ventas:    g(vRow),
-      mb:        g(mbRow),      mbPct:    pct(mbPctRow),
-      ebitda:    g(ebitdaRow),  ebitdaPct: pct(ebitdaPctRow),
-      intereses: g(intRow),
-      ebt:       g(ebtRow),     ebtPct:   pct(ebtPctRow),
-      utilidad:  g(netRow),     utilPct:  pct(netPctRow),
+      ventas,
+      mbPct:    gp(mbPctRow),
+      ebitdaPct: gp(ebitdaPctRow),
+      intPct,
+      ebtPct:   gp(ebtPctRow),
+      netPct:   gp(netPctRow),
     };
   }
 
-  // Build header
-  const headers = activeCompanies.map(c =>
-    `<th style="text-align:right;padding:8px 12px;color:${c.color};font-size:11px;font-weight:600">${c.name.replace('Contempora ','')}</th>`
-  ).join('');
-
-  // Waterfall rows definition
-  const wfRows = [
-    { label:'Ventas',       key:'ventas',    pctKey:null,       bold:true,  color:'var(--text)' },
-    { label:'Margen Bruto', key:'mb',        pctKey:'mbPct',    bold:false, color:'var(--text)' },
-    { label:'EBITDA',       key:'ebitda',    pctKey:'ebitdaPct',bold:false, color:'var(--text)', dynamic:true },
-    { label:'- Intereses',  key:'intereses', pctKey:null,       bold:false, color:'#DC2626', isDeduction:true },
-    { label:'EBT',          key:'ebt',       pctKey:'ebtPct',   bold:false, color:'var(--text)', dynamic:true },
-    { label:'Utilidad Neta',key:'utilidad',  pctKey:'utilPct',  bold:true,  color:'var(--text)', dynamic:true },
+  const cols = [
+    { label:'Ventas',      key:'ventas',    fmt: v => fmtM(Math.round(v)), pct:false, dynamic:false },
+    { label:'Mg Bruto %',  key:'mbPct',     fmt: v => v.toFixed(1)+'%',    pct:true,  dynamic:false },
+    { label:'EBITDA %',    key:'ebitdaPct', fmt: v => v.toFixed(1)+'%',    pct:true,  dynamic:true  },
+    { label:'Intereses %', key:'intPct',    fmt: v => v.toFixed(1)+'%',    pct:true,  dynamic:false, isDeduction:true },
+    { label:'EBT %',       key:'ebtPct',    fmt: v => v.toFixed(1)+'%',    pct:true,  dynamic:true  },
+    { label:'Utilidad %',  key:'netPct',    fmt: v => v.toFixed(1)+'%',    pct:true,  dynamic:true  },
   ];
 
-  const data = activeCompanies.map(c => getWaterfall(c));
+  const headerCells = cols.map(col =>
+    `<th style="text-align:right;padding:7px 10px;font-size:9.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);font-weight:600;white-space:nowrap">${col.label}</th>`
+  ).join('');
 
-  const rowsHTML = wfRows.map(row => {
-    const cells = activeCompanies.map((c, i) => {
-      const d = data[i];
-      if (!d) return `<td style="text-align:right;padding:7px 12px;font-family:'DM Mono',monospace;font-size:12px">—</td>`;
-      const v = d[row.key];
-      const p = row.pctKey ? d[row.pctKey] : null;
-      const vStr = v !== null ? fmtM(Math.round(v)) : '—';
-      const pStr = p !== null ? `<span style="font-size:10px;color:var(--text-muted);margin-left:4px">${p.toFixed(1)}%</span>` : '';
-      const isNeg = v !== null && v < 0;
-      const color = row.dynamic ? (isNeg ? '#DC2626' : '#059669') : row.color;
-      return `<td style="text-align:right;padding:7px 12px;font-family:'DM Mono',monospace;font-size:12px;font-weight:${row.bold?'600':'400'};color:${color}">${vStr}${pStr}</td>`;
+  const rowsHTML = activeCompanies.map(c => {
+    const d = getWaterfall(c);
+    const cells = cols.map(col => {
+      const v = d ? d[col.key] : null;
+      if (v === null || v === undefined) return `<td style="text-align:right;padding:7px 10px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text-muted)">—</td>`;
+      const isNeg = v < 0;
+      const color = col.isDeduction ? '#DC2626' :
+                    col.dynamic ? (isNeg ? '#DC2626' : '#059669') :
+                    'var(--text)';
+      const str = col.fmt(v);
+      return `<td style="text-align:right;padding:7px 10px;font-size:12px;font-family:'DM Mono',monospace;font-weight:500;color:${color}">${str}</td>`;
     }).join('');
 
-    const bgStyle = row.bold ? 'background:var(--bg)' : '';
-    return `<tr style="${bgStyle}">
-      <td style="padding:7px 12px;font-size:12.5px;font-weight:${row.bold?'600':'400'};color:${row.isDeduction?'#DC2626':'var(--text)'}">${row.label}</td>
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 10px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0"></div>
+          <span style="font-size:12.5px;font-weight:500">${c.name.replace('Contempora ','')}</span>
+        </div>
+      </td>
       ${cells}
     </tr>`;
   }).join('');
 
   list.innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <table style="width:100%;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:2px solid var(--border)">
-          <th style="text-align:left;padding:8px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Concepto</th>
-          ${headers}
+          <th style="text-align:left;padding:7px 10px;font-size:9.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);font-weight:600">Empresa</th>
+          ${headerCells}
         </tr>
       </thead>
-      <tbody>
-        ${rowsHTML}
-      </tbody>
+      <tbody>${rowsHTML}</tbody>
     </table>
-    <div style="font-size:10.5px;color:var(--text-light);margin-top:10px">% sobre ventas. Montos en M$.</div>`;
+    <div style="font-size:10px;color:var(--text-light);margin-top:8px">% sobre ventas · Verde = positivo · Rojo = negativo o deducción</div>`;
 }
 
 // ─────────────────────────────────────────────
