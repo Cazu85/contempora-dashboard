@@ -659,7 +659,6 @@ function updateSummary() {
   const pl = PERIOD_LABELS[currentPeriod];
   document.getElementById('headerSub').textContent = `${pl.sub} · Fuente: Google Sheets`;
   document.getElementById('rankingTitle').textContent  = `Ranking de Ventas — ${pl.label}`;
-  document.getElementById('bvrTitle').textContent      = `Real vs Presupuesto — ${pl.label}`;
   document.getElementById('sectionLabel').textContent  = `Empresas del Grupo — ${pl.label} · clic para ver detalle`;
 
   const parseM = s => {
@@ -754,20 +753,11 @@ function buildCompanyCards() {
     const posE = p.ebitda && !p.ebitda.startsWith('-');
     const el = document.createElement('div');
     el.className = 'company-card fade-update';
-    el.innerHTML = `
-      <div class="card-top" style="background:${c.bg}">
-        <div>
-          <span class="card-badge" style="background:${c.color}20;color:${c.color}">${c.badge}</span>
-          <div class="card-name">${c.name}</div>
-          <div class="card-sector">${c.sector}</div>
-        </div>
-        <div style="font-size:11px;font-family:'DM Mono',monospace;color:${p.cumplimiento>=90?'#059669':p.cumplimiento>=80?'#D97706':'#DC2626'};font-weight:600;background:${p.cumplimiento>=90?'#ECFDF5':p.cumplimiento>=80?'#FFFBEB':'#FEF2F2'};padding:4px 9px;border-radius:20px">${p.cumplimiento}% ppto</div>
-      </div>
+
     // Get EBITDA monto from GS
     let ebitdaMonto = '—';
     const cRows = gsDataCache[c.name];
     if (cRows) {
-      // Find EBITDA row (3rd occurrence = real 2026 block)
       let ec = 0, ebitdaRow = null;
       for (let i=0; i<cRows.length; i++) {
         if ((cRows[i][0]||'').toString().trim().toLowerCase().startsWith('ebitda  (')) {
@@ -782,6 +772,15 @@ function buildCompanyCards() {
       }
     }
 
+    el.innerHTML = `
+      <div class="card-top" style="background:${c.bg}">
+        <div>
+          <span class="card-badge" style="background:${c.color}20;color:${c.color}">${c.badge}</span>
+          <div class="card-name">${c.name}</div>
+          <div class="card-sector">${c.sector}</div>
+        </div>
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:${p.cumplimiento>=90?'#059669':p.cumplimiento>=80?'#D97706':'#DC2626'};font-weight:600;background:${p.cumplimiento>=90?'#ECFDF5':p.cumplimiento>=80?'#FFFBEB':'#FEF2F2'};padding:4px 9px;border-radius:20px">${p.cumplimiento}% ppto</div>
+      </div>
       <div class="card-kpis">
         <div><div class="kpi-label">Ventas</div><div class="kpi-value">${p.ventas}</div><div class="kpi-delta ${posV?'pos':'neg'}">${p.deltaVentas} vs 2025</div></div>
         <div><div class="kpi-label">Margen</div><div class="kpi-value">${p.margen}</div><div class="kpi-delta ${posM?'pos':'neg'}">${p.deltaMargen} vs 2025</div></div>
@@ -964,9 +963,72 @@ function buildRanking() {
 function buildBVR() {
   const list = document.getElementById('bvrList');
   list.innerHTML = '';
-  companies.forEach(c=>{
-    const p=getPeriodData(c), pct=p.cumplimiento, col=pct>=90?'#059669':pct>=80?'#D97706':'#DC2626';
-    list.innerHTML += `<div class="bvr-row"><div class="bvr-name">${c.name.replace('Contempora ','')}</div><div class="bvr-bars"><div class="bvr-bar-wrap"><div class="bvr-bar-real" style="width:${pct}%;background:${c.color}"></div></div><div class="bvr-bar-wrap"><div class="bvr-bar-bud" style="width:100%;background:${c.color}"></div></div></div><div class="bvr-pct" style="color:${col}">${pct}%</div></div>`;
+  document.getElementById('bvrTitle').textContent = `Estructura de resultados — ${PERIOD_LABELS[currentPeriod].label}`;
+
+  // For each company with data, build cost structure: CV%, GO%, EBITDA%, Utilidad%
+  const activeCompanies = companies.filter(c => {
+    const p = getPeriodData(c);
+    return p.ventas && p.ventas !== '$0M' && p.ventas !== '—';
+  });
+
+  if (activeCompanies.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px 0">Sin datos disponibles.</div>';
+    return;
+  }
+
+  // Header
+  list.innerHTML = `
+    <div style="display:grid;grid-template-columns:130px 1fr 1fr 1fr 1fr;gap:6px;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px">
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Empresa</div>
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:right">CV / Ventas</div>
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:right">GO / Ventas</div>
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:right">EBITDA%</div>
+      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:right">Mg Bruto</div>
+    </div>`;
+
+  activeCompanies.forEach(c => {
+    const p = getPeriodData(c);
+    const cRows = gsDataCache[c.name];
+    let cvPct = '—', goPct = '—', ebitdaPct = p.ebitda || '—', mgPct = p.margen || '—';
+
+    if (cRows) {
+      const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+
+      // Find Ventas 2026, CV, GO in real block
+      let realVRow = null, cvRow = null, goRow = null;
+      for (let i=0; i<cRows.length; i++) {
+        const a = (cRows[i][0]||'').toString().trim().toLowerCase();
+        if (a.startsWith('ventas 2026') && !realVRow) realVRow = i+1;
+        if (realVRow && a.includes('costo de ventas') && !cvRow) cvRow = i+1;
+        if (realVRow && a.includes('gastos operacionales') && !goRow) goRow = i+1;
+        if (realVRow && cvRow && goRow) break;
+      }
+
+      if (realVRow && cvRow) {
+        const vReal = toMillions(getVal(cRows, realVRow, col));
+        const cv    = toMillions(getVal(cRows, cvRow, col));
+        const go    = goRow ? toMillions(getVal(cRows, goRow, col)) : null;
+        if (vReal && vReal > 0) {
+          if (cv !== null) cvPct = Math.round((cv/vReal)*100) + '%';
+          if (go !== null) goPct = Math.round((go/vReal)*100) + '%';
+        }
+      }
+    }
+
+    const ebitdaNum = parseFloat(ebitdaPct);
+    const ebitdaColor = !isNaN(ebitdaNum) && ebitdaNum >= 0 ? '#059669' : '#DC2626';
+
+    list.innerHTML += `
+      <div style="display:grid;grid-template-columns:130px 1fr 1fr 1fr 1fr;gap:6px;padding:9px 0;border-bottom:1px solid var(--border);align-items:center">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0"></div>
+          <div style="font-size:12.5px;font-weight:500">${c.name.replace('Contempora ','')}</div>
+        </div>
+        <div style="text-align:right;font-size:12.5px;font-family:'DM Mono',monospace;font-weight:500">${cvPct}</div>
+        <div style="text-align:right;font-size:12.5px;font-family:'DM Mono',monospace;font-weight:500">${goPct}</div>
+        <div style="text-align:right;font-size:12.5px;font-family:'DM Mono',monospace;font-weight:600;color:${ebitdaColor}">${ebitdaPct}</div>
+        <div style="text-align:right;font-size:12.5px;font-family:'DM Mono',monospace;font-weight:500">${mgPct}</div>
+      </div>`;
   });
 }
 
