@@ -753,9 +753,9 @@ function buildCompanyCards() {
   grid.innerHTML = '';
   companies.forEach(c => {
     const p = getPeriodData(c);
-    const posM = p.deltaMargen.startsWith('+'), posV = p.deltaVentas.startsWith('+');
-    const sMax = Math.max(...p.spark);
-    const sparks = p.spark.map(v=>`<span style="height:${Math.round((v/sMax)*28)}px;background:${c.color};opacity:0.75"></span>`).join('');
+    const posM = p.deltaMargen && p.deltaMargen.startsWith('+');
+    const posV = p.deltaVentas && p.deltaVentas.startsWith('+');
+    const posE = p.ebitda && !p.ebitda.startsWith('-');
     const el = document.createElement('div');
     el.className = 'company-card fade-update';
     el.innerHTML = `
@@ -770,7 +770,8 @@ function buildCompanyCards() {
       <div class="card-kpis">
         <div><div class="kpi-label">Ventas</div><div class="kpi-value">${p.ventas}</div><div class="kpi-delta ${posV?'pos':'neg'}">${p.deltaVentas} vs 2025</div></div>
         <div><div class="kpi-label">Margen</div><div class="kpi-value">${p.margen}</div><div class="kpi-delta ${posM?'pos':'neg'}">${p.deltaMargen} vs 2025</div></div>
-        <div style="grid-column:1/-1"><div class="kpi-label">Tendencia ventas (8 meses)</div><div class="spark-bar">${sparks}</div></div>
+        <div><div class="kpi-label">EBITDA</div><div class="kpi-value" style="color:${posE?'#059669':'#DC2626'}">${p.ebitda}</div></div>
+        <div><div class="kpi-label">Dotación</div><div class="kpi-value">${c.headcount > 0 ? c.headcount+' pers.' : '—'}</div></div>
       </div>`;
     el.addEventListener('click', () => openDrawer(c.id));
     grid.appendChild(el);
@@ -820,19 +821,22 @@ function buildRanking() {
     }
     if (!lastCol) return { pptoYTD: null, real2025: null, proyAnual: null };
 
-    // Ppto acumulado mismo período
+    // Ppto anual completo
     let pptoYTD = 0;
-    for (let ci = COL.ene; ci <= lastCol; ci++) {
-      const v = toMillions(getVal(rows, pptoRow, ci));
-      if (v) pptoYTD += v;
+    const pptoYTDval = toMillions(getVal(rows, pptoRow, COL.ytd));
+    pptoYTD = pptoYTDval ? Math.round(pptoYTDval) : 0;
+    if (!pptoYTD) {
+      // fallback: sum all months
+      for (let ci = COL.ene; ci <= COL.dic; ci++) {
+        const v = toMillions(getVal(rows, pptoRow, ci));
+        if (v) pptoYTD += v;
+      }
+      pptoYTD = Math.round(pptoYTD);
     }
 
-    // Real 2025 mismo período
-    let real2025 = 0;
-    for (let ci = COL.ene; ci <= lastCol; ci++) {
-      const v = toMillions(getVal(rows, antVentasRow, ci));
-      if (v) real2025 += v;
-    }
+    // Real 2025 total anual
+    const real2025val = toMillions(getVal(rows, antVentasRow, COL.ytd));
+    const real2025 = real2025val ? Math.round(real2025val) : 0;
 
     // Proyección anual
     const ytdReal = toMillions(getVal(rows, realVentasRow, COL.ytd)) || 0;
@@ -891,7 +895,7 @@ function buildRanking() {
           </div>
           <div class="rank-metrics">
             <div class="rank-metric">
-              <div class="rank-metric-label">Ppto YTD</div>
+              <div class="rank-metric-label">Ppto 2026</div>
               <div class="rank-metric-val" style="color:${pptoColor}">${pptoStr}</div>
             </div>
             <div class="rank-metric">
@@ -917,7 +921,7 @@ function buildRanking() {
           <div class="ranking-total-val">${fmtM(Math.round(totalYTD))}</div>
         </div>
         <div class="ranking-total-col">
-          <div class="ranking-total-label">Ppto YTD</div>
+          <div class="ranking-total-label">Ppto 2026</div>
           <div class="ranking-total-val">${totalPpto > 0 ? fmtM(totalPpto) : '—'}</div>
         </div>
         <div class="ranking-total-col">
