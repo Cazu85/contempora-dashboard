@@ -1601,6 +1601,7 @@ function connectSheet() {
   const id = document.getElementById('gsId').value.trim();
   if (!id) return;
   gsSheetId = id;
+  localStorage.setItem('contempora_gs_id', id); // persist ID
   document.getElementById('modal').classList.remove('open');
   updateGSBanner('Conectando…', '🔄');
   loadAllSheets();
@@ -2249,6 +2250,15 @@ document.querySelectorAll('.gs-btn').forEach(b => {
 
 // ─── INIT ───
 setPeriod('mar');
+
+// Auto-reconnect to Google Sheets if ID was saved previously
+const savedGsId = localStorage.getItem('contempora_gs_id');
+if (savedGsId) {
+  gsSheetId = savedGsId;
+  document.getElementById('gsId').value = savedGsId;
+  updateGSBanner('Reconectando…', '🔄');
+  loadAllSheets();
+}
 </script>
 </body>
 </html>
