@@ -1311,13 +1311,16 @@ function openDrawer(id) {
     };
 
     const ventas = gv(vRow);
+    const interesesMonto = gv(intRow);
+    const intPct = (interesesMonto !== null && ventas && ventas > 0) ? (interesesMonto/ventas)*100 : null;
+
     const wfItems = [
-      { label:'Ventas',        v: ventas,       pct: 100,             bold:true,  isDeduction:false },
-      { label:'Margen Bruto',  v: gv(mbRow),    pct: gp(mbPctRow),    bold:false, isDeduction:false },
-      { label:'EBITDA',        v: gv(ebitdaRow), pct: gp(ebitdaPctRow),bold:false, isDeduction:false, dynamic:true },
-      { label:'- Intereses',   v: gv(intRow),   pct: null,            bold:false, isDeduction:true  },
-      { label:'EBT',           v: gv(ebtRow),   pct: gp(ebtPctRow),   bold:false, isDeduction:false, dynamic:true },
-      { label:'Utilidad Neta', v: gv(netRow),   pct: gp(netPctRow),   bold:true,  isDeduction:false, dynamic:true },
+      { label:'Ventas',        v: ventas,          pct: 100,              bold:true,  isDeduction:false },
+      { label:'Margen Bruto',  v: gv(mbRow),       pct: gp(mbPctRow),     bold:false, isDeduction:false },
+      { label:'EBITDA',        v: gv(ebitdaRow),   pct: gp(ebitdaPctRow), bold:false, isDeduction:false, dynamic:true },
+      { label:'- Intereses',   v: interesesMonto,  pct: intPct,           bold:false, isDeduction:true  },
+      { label:'EBT',           v: gv(ebtRow),      pct: gp(ebtPctRow),    bold:false, isDeduction:false, dynamic:true },
+      { label:'Utilidad Neta', v: gv(netRow),      pct: gp(netPctRow),    bold:true,  isDeduction:false, dynamic:true },
     ];
 
     const maxAbs = Math.max(...wfItems.map(x => Math.abs(x.v||0)), 1);
