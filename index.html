@@ -380,6 +380,8 @@
       <a class="nav-item" href="#" onclick="openDrawer('colgram');return false;"><span class="nav-dot" style="background:#7C3AED"></span>Colgram</a>
       <a class="nav-item" href="#" onclick="openDrawer('factoring');return false;"><span class="nav-dot" style="background:#DC2626"></span>Factoring</a>
       <a class="nav-item" href="#" onclick="openDrawer('leasing');return false;"><span class="nav-dot" style="background:#0891B2"></span>Leasing</a>
+      <a class="nav-item" href="#" onclick="openDrawer('seguros');return false;"><span class="nav-dot" style="background:#EA580C"></span>Seguros</a>
+      <a class="nav-item" href="#" onclick="openDrawer('save');return false;"><span class="nav-dot" style="background:#7C3AED"></span>SAVE</a>
       <div class="nav-label" style="margin-top:auto">Sesión</div>
       <div class="role-badge" id="roleBadge">
         <div><div style="font-size:10px;margin-bottom:2px">Rol activo</div><strong id="roleLabel">—</strong></div>
@@ -624,6 +626,32 @@ const companies = [
       mar:{ ventas:'$330M', margen:'44.7%', ebitda:'38.2%', cumplimiento:87, deltaVentas:'+7.1%', deltaMargen:'+1.1pp', spark:[25,28,30,32,35,36,38,42], sg:null, monthly:[{m:'Ago',r:25,b:28},{m:'Sep',r:28,b:30},{m:'Oct',r:30,b:32},{m:'Nov',r:32,b:34},{m:'Dic',r:35,b:36},{m:'Ene',r:36,b:37},{m:'Feb',r:38,b:39},{m:'Mar',r:42,b:48}] },
       q1: { ventas:'$960M', margen:'44.4%', ebitda:'37.9%', cumplimiento:86, deltaVentas:'+6.2%', deltaMargen:'+0.9pp', spark:[25,28,30,32,35,36,38,42], sg:null, monthly:[{m:'Ago',r:25,b:28},{m:'Sep',r:28,b:30},{m:'Oct',r:30,b:32},{m:'Nov',r:32,b:34},{m:'Dic',r:35,b:36},{m:'Ene',r:36,b:37},{m:'Feb',r:38,b:39},{m:'Mar',r:42,b:48}] },
       ytd:{ ventas:'$960M', margen:'44.4%', ebitda:'37.9%', cumplimiento:86, deltaVentas:'+6.2%', deltaMargen:'+0.9pp', spark:[25,28,30,32,35,36,38,42], sg:null, monthly:[{m:'Ago',r:25,b:28},{m:'Sep',r:28,b:30},{m:'Oct',r:30,b:32},{m:'Nov',r:32,b:34},{m:'Dic',r:35,b:36},{m:'Ene',r:36,b:37},{m:'Feb',r:38,b:39},{m:'Mar',r:42,b:48}] },
+    }
+  },
+  {
+    id:'seguros', name:'Contempora Seguros Generales', sector:'Financiero · Seguros', color:'#EA580C', bg:'#FFF7ED', badge:'Financiero', headcount:0,
+    subgruposBase: null,
+    subgruposNota: 'Empresa de ingresos financieros consolidados. No aplica desglose por tipo de venta.',
+    costos:[], indicadores:[],
+    periods:{
+      ene:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      feb:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      mar:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      q1: { ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      ytd:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+    }
+  },
+  {
+    id:'save', name:'SAVE', sector:'Financiero · Seguros', color:'#7C3AED', bg:'#F5F3FF', badge:'Financiero', headcount:0,
+    subgruposBase: null,
+    subgruposNota: 'Empresa de ingresos financieros consolidados. No aplica desglose por tipo de venta.',
+    costos:[], indicadores:[],
+    periods:{
+      ene:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      feb:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      mar:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      q1: { ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
+      ytd:{ ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[] },
     }
   }
 ];
@@ -1071,6 +1099,8 @@ const DRAWER_CFG = {
   'Colgram':             { cv:57, go:60, dso:101, rot:102, hc:95  },
   'Contempora Factoring':{ cv:51, go:54, dso:null, rot:null, hc:88 },
   'Contempora Leasing':  { cv:51, go:54, dso:null, rot:null, hc:88 },
+  'Contempora Seguros Generales': { cv:51, go:54, dso:null, rot:null, hc:88 },
+  'SAVE':                { cv:51, go:54, dso:null, rot:null, hc:88 },
 };
 
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -1583,6 +1613,8 @@ const SHEET_CONFIG = {
   'Colgram':             { ppto_ventas:4,  ant_ventas:29, ant_margen:34, ant_ebitda:41, real_ventas:54, real_margen:59, real_ebitda:66, headcount:95,  sg_rows:[55,56],          sg_ant:[30,31] },
   'Contempora Factoring':{ ppto_ventas:4,  ant_ventas:27, ant_margen:30, ant_ebitda:37, real_ventas:50, real_margen:53, real_ebitda:60, headcount:88,  sg_rows:[],               sg_ant:[] },
   'Contempora Leasing':  { ppto_ventas:4,  ant_ventas:27, ant_margen:30, ant_ebitda:37, real_ventas:50, real_margen:53, real_ebitda:60, headcount:88,  sg_rows:[],               sg_ant:[] },
+  'Contempora Seguros Generales': { ppto_ventas:4, ant_ventas:27, ant_margen:30, ant_ebitda:37, real_ventas:50, real_margen:53, real_ebitda:60, headcount:88, sg_rows:[], sg_ant:[] },
+  'SAVE':                { ppto_ventas:4,  ant_ventas:27, ant_margen:30, ant_ebitda:37, real_ventas:50, real_margen:53, real_ebitda:60, headcount:88,  sg_rows:[],               sg_ant:[] },
 };
 
 // Column indices (0-based): A=0, B=1, C=2(Ene)...N=13(Dic), O=14(YTD)
