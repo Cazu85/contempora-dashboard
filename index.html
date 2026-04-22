@@ -1121,44 +1121,24 @@ function openDrawer(id) {
     }
   }
 
-  // ── Line chart ────────────────────────────────────────────────
+  // ── Bar chart ─────────────────────────────────────────────────
   let barCols = '', mthRows = '';
   if (monthlyData.length > 0) {
-    const W = 580, H = 110, PAD = 12;
     const maxM = Math.max(...monthlyData.map(m=>Math.max(m.r, m.b||0)), 1);
-    const n = monthlyData.length;
-    const xStep = (W - PAD*2) / Math.max(n-1, 1);
-
-    const px = i => PAD + i * xStep;
-    const py = v => H - PAD - Math.round((v/maxM) * (H - PAD*2));
-
-    const realPts  = monthlyData.map((m,i) => `${px(i)},${py(m.r)}`).join(' ');
-    const pptoPts  = monthlyData.filter(m=>m.b).map((m,i) => `${px(i)},${py(m.b)}`).join(' ');
-    const hasPpto  = monthlyData.some(m=>m.b);
-
-    // Dots for real
-    const realDots = monthlyData.map((m,i) => {
+    barCols = monthlyData.map(m=>{
+      const rH = Math.round((m.r/maxM)*88);
+      const bH = m.b ? Math.round((m.b/maxM)*88) : 0;
+      const containerH = Math.max(rH, bH, 4);
       const beating = m.b && m.r >= m.b;
-      return `<circle cx="${px(i)}" cy="${py(m.r)}" r="3.5" fill="${beating?'#34d399':c.color}" stroke="#0f1117" stroke-width="1.5"/>`;
+      return `<div class="bar-col">
+        <div class="bar-val-label">${fmtM(m.r)}</div>
+        <div style="width:100%;height:${containerH}px;display:flex;align-items:flex-end;gap:2px">
+          <div style="flex:1;height:${rH}px;background:${beating?'#34d399':c.color};border-radius:3px 3px 0 0;min-height:3px;opacity:0.9"></div>
+          ${m.b ? `<div style="flex:1;height:${bH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.25;min-height:3px"></div>` : ''}
+        </div>
+        <div class="bar-month-label">${m.m}</div>
+      </div>`;
     }).join('');
-
-    // Labels on x axis
-    const xLabels = monthlyData.map((m,i) =>
-      `<text x="${px(i)}" y="${H}" text-anchor="middle" font-size="9" fill="#4a4d5e">${m.m}</text>`
-    ).join('');
-
-    // Value labels above real line
-    const valLabels = monthlyData.map((m,i) =>
-      `<text x="${px(i)}" y="${py(m.r)-7}" text-anchor="middle" font-size="8.5" fill="#7a7d8e">${fmtM(m.r)}</text>`
-    ).join('');
-
-    barCols = `<svg viewBox="0 0 ${W} ${H+10}" style="width:100%;overflow:visible">
-      ${hasPpto ? `<polyline points="${pptoPts}" fill="none" stroke="${c.color}" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.3"/>` : ''}
-      <polyline points="${realPts}" fill="none" stroke="${c.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      ${realDots}
-      ${xLabels}
-      ${valLabels}
-    </svg>`;
 
     mthRows = monthlyData.map(m=>{
       const cumpl = m.b ? Math.round((m.r/m.b)*100) : 0;
@@ -1532,13 +1512,13 @@ function openDrawer(id) {
 
     <div class="detail-section">
       <div class="detail-section-title">Ventas mensuales — Real vs Presupuesto</div>
-      <div style="width:100%;padding:4px 0">${barCols}</div>
-      <div style="display:flex;gap:16px;margin-top:8px">
+      <div class="bar-chart">${barCols}</div>
+      <div style="display:flex;gap:16px;margin-top:10px">
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
-          <div style="width:16px;height:2.5px;background:${c.color};border-radius:2px"></div>Real
+          <div style="width:12px;height:8px;background:${c.color};border-radius:2px;opacity:0.9"></div>Real
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
-          <div style="width:16px;height:0;border-top:2px dashed ${c.color};opacity:0.35"></div>Presupuesto
+          <div style="width:12px;height:8px;background:${c.color};border-radius:2px;opacity:0.25"></div>Presupuesto
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
           <div style="width:8px;height:8px;border-radius:50%;background:#34d399"></div>Sobre ppto
