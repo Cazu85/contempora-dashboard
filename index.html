@@ -742,7 +742,26 @@ function setDelta(id, text, pos) {
 function buildCompanyCards() {
   const grid = document.getElementById('companyGrid');
   grid.innerHTML = '';
-  const sorted = [...companies].sort((a,b) => getPeriodData(b).cumplimiento - getPeriodData(a).cumplimiento);
+  const parseM = s => {
+    if (!s || s === '—') return 0;
+    return parseFloat(s.replace(/[$M\s]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+  };
+  // Pre-calculate EBITDA monto for sorting
+  companies.forEach(c => {
+    const cRows = gsDataCache[c.name];
+    if (!cRows) { c._ebitdaVal = -Infinity; return; }
+    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    let ec = 0, ebitdaRow = null;
+    for (let i=0; i<cRows.length; i++) {
+      if ((cRows[i][0]||'').toString().trim().toLowerCase().startsWith('ebitda  (')) {
+        ec++;
+        if (ec === 3) { ebitdaRow = i+1; break; }
+      }
+    }
+    const v = ebitdaRow ? toMillions(getVal(cRows, ebitdaRow, col)) : null;
+    c._ebitdaVal = v !== null ? v : -Infinity;
+  });
+  const sorted = [...companies].sort((a,b) => (b._ebitdaVal||0) - (a._ebitdaVal||0));
   sorted.forEach(c => {
     const p = getPeriodData(c);
     const posM = p.deltaMargen && p.deltaMargen.startsWith('+');
@@ -765,7 +784,7 @@ function buildCompanyCards() {
       if (ebitdaRow) {
         const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
         const v = toMillions(getVal(cRows, ebitdaRow, col));
-        if (v !== null) ebitdaMonto = fmtM(Math.round(v));
+        if (v !== null) { ebitdaMonto = fmtM(Math.round(v)); c._ebitdaMonto = ebitdaMonto; }
       }
     }
 
