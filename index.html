@@ -2277,12 +2277,13 @@ document.querySelectorAll('.gs-btn').forEach(b => {
 // ─── INIT ───
 setPeriod('mar');
 
-// Auto-reconnect to Google Sheets if ID was saved previously
-const savedGsId = localStorage.getItem('contempora_gs_id');
+// Auto-connect to Google Sheets — ID hardcoded for cross-browser compatibility
+const HARDCODED_GS_ID = '1MneN5UeWIcFUHJd_QL4nxhKiSRS65S6H';
+const savedGsId = localStorage.getItem('contempora_gs_id') || HARDCODED_GS_ID;
 if (savedGsId) {
   gsSheetId = savedGsId;
   document.getElementById('gsId').value = savedGsId;
-  updateGSBanner('Reconectando…', '🔄');
+  updateGSBanner('Conectando…', '🔄');
   loadAllSheets();
 }
 </script>
