@@ -346,7 +346,7 @@
       <a class="nav-item" href="#" onclick="openDrawer('masterfibra');return false;"><span class="nav-dot" style="background:#059669"></span>Masterfibra</a>
       <a class="nav-item" href="#" onclick="openDrawer('coppelia');return false;"><span class="nav-dot" style="background:#D97706"></span>Coppelia</a>
       <a class="nav-item" href="#" onclick="openDrawer('colgram');return false;"><span class="nav-dot" style="background:#7C3AED"></span>Colgram</a>
-      <a class="nav-item" href="#" onclick="openDrawer('factoring');return false;"><span class="nav-dot" style="background:#DC2626"></span>Factoring</a>
+      <a class="nav-item" href="#" onclick="openDrawer('factoring');return false;"><span class="nav-dot" style="background:#0369a1"></span>Factoring</a>
       <a class="nav-item" href="#" onclick="openDrawer('leasing');return false;"><span class="nav-dot" style="background:#0891B2"></span>Leasing</a>
       <a class="nav-item" href="#" onclick="openDrawer('seguros');return false;"><span class="nav-dot" style="background:#EA580C"></span>Seguros</a>
       <a class="nav-item" href="#" onclick="openDrawer('save');return false;"><span class="nav-dot" style="background:#7C3AED"></span>SAVE</a>
@@ -569,7 +569,7 @@ const companies = [
     }
   },
   {
-    id:'factoring', name:'Contempora Factoring', sector:'Financiero · Factoring', color:'#DC2626', bg:'#FEF2F2', badge:'Financiero', headcount:28,
+    id:'factoring', name:'Contempora Factoring', sector:'Financiero · Factoring', color:'#0369a1', bg:'#EFF6FF', badge:'Financiero', headcount:28,
     subgruposBase: null,
     subgruposNota: 'Empresa de ingresos financieros consolidados. No aplica desglose por tipo de venta.',
     costos:[{n:'Costo de fondos',v:'$310M',pct:50,color:'#DC2626'},{n:'Remuneraciones',v:'$56M',pct:9,color:'#F87171'},{n:'Provisiones',v:'$74M',pct:12,color:'#FCA5A5'},{n:'Gastos Admin.',v:'$31M',pct:5,color:'#FECACA'},{n:'Otros',v:'$149M',pct:24,color:'#FEE2E2'}],
@@ -1124,14 +1124,16 @@ function openDrawer(id) {
   // ── Bar chart ─────────────────────────────────────────────────
   let barCols = '', mthRows = '';
   if (monthlyData.length > 0) {
-    const maxM = Math.max(...monthlyData.map(m=>Math.max(m.r, m.b||0)));
+    const maxM = Math.max(...monthlyData.map(m=>Math.max(m.r, m.b||0)), 1);
     barCols = monthlyData.map(m=>{
-      const rH=Math.round((m.r/maxM)*96), bH=Math.round(((m.b||0)/maxM)*96);
+      const rH = Math.round((m.r/maxM)*88);
+      const bH = m.b ? Math.round((m.b/maxM)*88) : 0;
+      const containerH = Math.max(rH, bH, 4);
       return `<div class="bar-col">
         <div class="bar-val-label">${fmtM(m.r)}</div>
-        <div style="width:100%;position:relative;height:${Math.max(rH,bH,4)}px">
-          ${m.b?`<div style="position:absolute;bottom:0;left:0;right:0;height:${bH}px;border:2px dashed ${c.color};border-radius:4px 4px 0 0;opacity:0.3"></div>`:''}
-          <div style="position:absolute;bottom:0;left:2px;right:2px;height:${rH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.85"></div>
+        <div style="width:100%;display:flex;align-items:flex-end;gap:2px;height:${containerH}px">
+          <div style="flex:1;height:${rH}px;background:${c.color};border-radius:3px 3px 0 0;opacity:0.9;min-height:3px"></div>
+          ${m.b ? `<div style="flex:1;height:${bH}px;border:1.5px dashed ${c.color};border-radius:3px 3px 0 0;opacity:0.35;min-height:3px"></div>` : ''}
         </div>
         <div class="bar-month-label">${m.m}</div>
       </div>`;
