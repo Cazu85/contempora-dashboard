@@ -681,12 +681,11 @@ function updateSummary() {
       if (!isNaN(pct)) totalVAnt += vReal / (1 + pct);
     }
     // Cumplimiento — suma real y ppto acumulado de empresas con datos
-    const vReal = parseM(p.ventas);
-    if (vReal > 0) {
-      totalCumpl += vReal;
-      // Reconstruct ppto acumulado from cumplimiento %
+    const vRealCumpl = parseM(p.ventas);
+    if (vRealCumpl > 0) {
+      totalCumpl += vRealCumpl;
       if (p.cumplimiento > 0) {
-        totalPptoAcum += vReal / (p.cumplimiento / 100);
+        totalPptoAcum += vRealCumpl / (p.cumplimiento / 100);
         cumplCount++;
       }
     }
