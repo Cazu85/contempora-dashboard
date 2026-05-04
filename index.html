@@ -714,7 +714,7 @@ function updateSummary() {
   animSet('sumVentas', totalVStr);
   animSet('sumMargen', avgMargen + '%');
   animSet('sumCumplimiento', avgCumpl > 0 ? avgCumpl + '%' : '—');
-  animSet('sumHeadcount', companies.reduce((a,c) => a + (c.headcount||0), 0) + ' pers.');
+  animSet('sumHeadcount', companies.reduce((a,c) => a + (getPeriodData(c).headcount || c.headcount || 0), 0) + ' pers.');
 
   setDelta('sumVentasDelta', vDeltaStr, totalV >= totalVAnt);
   setDelta('sumMargenDelta', mDeltaStr, margenes.length > 0 && margenes.reduce((a,b)=>a+b,0) >= 0);
@@ -802,7 +802,7 @@ function buildCompanyCards() {
         <div><div class="kpi-label">Margen</div><div class="kpi-value">${p.margen}</div><div class="kpi-delta ${posM?'pos':'neg'}">${p.deltaMargen} vs 2025</div></div>
         <div><div class="kpi-label">EBITDA %</div><div class="kpi-value" style="color:${posE?'#059669':'#DC2626'}">${p.ebitda}</div></div>
         <div><div class="kpi-label">EBITDA M$</div><div class="kpi-value" style="color:${posE?'#059669':'#DC2626'}">${ebitdaMonto}</div></div>
-        <div><div class="kpi-label">Dotación</div><div class="kpi-value">${c.headcount > 0 ? c.headcount+' pers.' : '—'}</div></div>
+        <div><div class="kpi-label">Dotación</div><div class="kpi-value">${(p.headcount||c.headcount) > 0 ? (p.headcount||c.headcount)+' pers.' : '—'}</div></div>
       </div>`;
     el.addEventListener('click', () => openDrawer(c.id));
     grid.appendChild(el);
@@ -1830,6 +1830,7 @@ function applySheetData() {
         if (p.sg) p.sg = p.sg.map(s => ({...s, v:0, delta:'—', pos:true}));
       });
       c.headcount = 0;
+      Object.keys(c.periods).forEach(per => { c.periods[per].headcount = 0; });
       return;
     }
 
@@ -1884,7 +1885,23 @@ function applySheetData() {
       if (vRealM !== null)  p.ventas = fmtVentas(vReal);
       if (mbReal !== null) p.margen = safeMargen(mbReal).toFixed(1) + '%';
       if (edReal !== null) p.ebitda = safeMargen(edReal).toFixed(1) + '%';
-      if (hc !== null)     c.headcount = Math.round(hc);
+      // Headcount: guardar por período específico
+      if (hcRow) {
+        const hcEne = getVal(rows, hcRow, COL.ene);
+        const hcFeb = getVal(rows, hcRow, COL.feb);
+        const hcMar = getVal(rows, hcRow, COL.mar);
+        // Last month with data for YTD/Q1
+        let hcLast = null;
+        for (let ci = COL.dic; ci >= COL.ene; ci--) {
+          const v = getVal(rows, hcRow, ci);
+          if (v && v !== 0) { hcLast = v; break; }
+        }
+        if (hcEne) c.periods.ene.headcount = Math.round(hcEne);
+        if (hcFeb) c.periods.feb.headcount = Math.round(hcFeb);
+        if (hcMar) c.periods.mar.headcount = Math.round(hcMar);
+        if (hcLast) { c.periods.q1.headcount = Math.round(hcLast); c.periods.ytd.headcount = Math.round(hcLast); }
+        if (hc !== null) c.headcount = Math.round(hc);
+      }
 
       // Cumplimiento: ppto acumulado de los mismos meses con datos reales
       let vPptoAcum = null;
