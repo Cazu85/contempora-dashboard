@@ -1842,11 +1842,19 @@ function applySheetData() {
       const vReal  = getVal(rows, detectedCfg.real_ventas,  col);
       const mbReal = getVal(rows, detectedCfg.real_margen,  col);
       const edReal = getVal(rows, detectedCfg.real_ebitda,  col);
-      // Headcount: siempre el último mes con dato cargado
+      // Headcount: buscar fila por etiqueta, usar último mes con dato
       let hc = null;
-      for (let ci = COL.dic; ci >= COL.ene; ci--) {
-        const v = getVal(rows, detectedCfg.headcount, ci);
-        if (v && v !== 0) { hc = v; break; }
+      let hcRow = null;
+      for (let i=0; i<rows.length; i++) {
+        const a = (rows[i][0]||'').toString().trim().toLowerCase();
+        if (a.startsWith('headcount')) { hcRow = i+1; break; }
+      }
+      if (hcRow) {
+        // Last month with data (iterate Dec→Jan)
+        for (let ci = COL.dic; ci >= COL.ene; ci--) {
+          const v = getVal(rows, hcRow, ci);
+          if (v && v !== 0) { hc = v; break; }
+        }
       }
 
       const vRealM = toMillions(vReal);
