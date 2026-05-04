@@ -1842,9 +1842,20 @@ function applySheetData() {
       const vReal  = getVal(rows, detectedCfg.real_ventas,  col);
       const mbReal = getVal(rows, detectedCfg.real_margen,  col);
       const edReal = getVal(rows, detectedCfg.real_ebitda,  col);
-      const hc     = getVal(rows, detectedCfg.headcount, COL.feb) ||
-                     getVal(rows, detectedCfg.headcount, COL.ene) ||
-                     getVal(rows, detectedCfg.headcount, COL.anual);
+      // Headcount: use selected period column, fallback to last month with data
+      let hc = null;
+      if (currentPeriod === 'q1' || currentPeriod === 'ytd') {
+        // Use last month with data
+        for (let ci = COL.dic; ci >= COL.ene; ci--) {
+          const v = getVal(rows, detectedCfg.headcount, ci);
+          if (v && v !== 0) { hc = v; break; }
+        }
+      } else {
+        hc = getVal(rows, detectedCfg.headcount, col) ||
+             getVal(rows, detectedCfg.headcount, COL.ene);
+      }
+      if (!hc) hc = getVal(rows, detectedCfg.headcount, COL.feb) ||
+                    getVal(rows, detectedCfg.headcount, COL.ene);
 
       const vRealM = toMillions(vReal);
 
