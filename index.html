@@ -370,7 +370,19 @@
         <button class="period-tab" data-period="ene">Ene</button>
         <button class="period-tab" data-period="feb">Feb</button>
         <button class="period-tab active" data-period="mar">Mar</button>
+        <button class="period-tab" data-period="abr">Abr</button>
+        <button class="period-tab" data-period="may">May</button>
+        <button class="period-tab" data-period="jun">Jun</button>
+        <button class="period-tab" data-period="jul">Jul</button>
+        <button class="period-tab" data-period="ago">Ago</button>
+        <button class="period-tab" data-period="sep">Sep</button>
+        <button class="period-tab" data-period="oct">Oct</button>
+        <button class="period-tab" data-period="nov">Nov</button>
+        <button class="period-tab" data-period="dic">Dic</button>
         <button class="period-tab" data-period="q1">Q1</button>
+        <button class="period-tab" data-period="q2">Q2</button>
+        <button class="period-tab" data-period="q3">Q3</button>
+        <button class="period-tab" data-period="q4">Q4</button>
         <button class="period-tab" data-period="ytd">YTD</button>
       </div>
     </div>
@@ -491,11 +503,23 @@
 // ─────────────────────────────────────────────
 
 const PERIOD_LABELS = {
-  ene: { label:'Enero 2026',   sub:'Datos al 31 de enero 2026',    monthly:['Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene'] },
-  feb: { label:'Febrero 2026', sub:'Datos al 28 de febrero 2026',  monthly:['Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb'] },
-  mar: { label:'Marzo 2026',   sub:'Datos al 31 de marzo 2026',    monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
-  q1:  { label:'Q1 2026',      sub:'Enero – Marzo 2026 acumulado', monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
-  ytd: { label:'YTD 2026',     sub:'Enero – Marzo 2026 (año en curso)', monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
+  ene: { label:'Enero 2026',      sub:'Datos al 31 de enero 2026',       monthly:['Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene'] },
+  feb: { label:'Febrero 2026',    sub:'Datos al 28 de febrero 2026',     monthly:['Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb'] },
+  mar: { label:'Marzo 2026',      sub:'Datos al 31 de marzo 2026',       monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
+  abr: { label:'Abril 2026',      sub:'Datos al 30 de abril 2026',       monthly:['Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr'] },
+  may: { label:'Mayo 2026',       sub:'Datos al 31 de mayo 2026',        monthly:['Oct','Nov','Dic','Ene','Feb','Mar','Abr','May'] },
+  jun: { label:'Junio 2026',      sub:'Datos al 30 de junio 2026',       monthly:['Nov','Dic','Ene','Feb','Mar','Abr','May','Jun'] },
+  jul: { label:'Julio 2026',      sub:'Datos al 31 de julio 2026',       monthly:['Dic','Ene','Feb','Mar','Abr','May','Jun','Jul'] },
+  ago: { label:'Agosto 2026',     sub:'Datos al 31 de agosto 2026',      monthly:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago'] },
+  sep: { label:'Septiembre 2026', sub:'Datos al 30 de septiembre 2026',  monthly:['Feb','Mar','Abr','May','Jun','Jul','Ago','Sep'] },
+  oct: { label:'Octubre 2026',    sub:'Datos al 31 de octubre 2026',     monthly:['Mar','Abr','May','Jun','Jul','Ago','Sep','Oct'] },
+  nov: { label:'Noviembre 2026',  sub:'Datos al 30 de noviembre 2026',   monthly:['Abr','May','Jun','Jul','Ago','Sep','Oct','Nov'] },
+  dic: { label:'Diciembre 2026',  sub:'Datos al 31 de diciembre 2026',   monthly:['May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'] },
+  q1:  { label:'Q1 2026',         sub:'Enero – Marzo 2026 acumulado',    monthly:['Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'] },
+  q2:  { label:'Q2 2026',         sub:'Abril – Junio 2026 acumulado',    monthly:['Nov','Dic','Ene','Feb','Mar','Abr','May','Jun'] },
+  q3:  { label:'Q3 2026',         sub:'Julio – Septiembre 2026 acumulado', monthly:['Feb','Mar','Abr','May','Jun','Jul','Ago','Sep'] },
+  q4:  { label:'Q4 2026',         sub:'Octubre – Diciembre 2026 acumulado', monthly:['May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'] },
+  ytd: { label:'YTD 2026',        sub:'Año en curso acumulado',          monthly:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago'] },
 };
 
 const companies = [
@@ -641,7 +665,9 @@ function getPasswords() {
 let currentRole  = null;
 let selectedRole = 'viewer';
 
-function getPeriodData(c) { return c.periods[currentPeriod]; }
+function getPeriodData(c) {
+  return c.periods[currentPeriod] || c.periods.ytd || { ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[], headcount:0 };
+}
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -754,7 +780,7 @@ function buildCompanyCards() {
   companies.forEach(c => {
     const cRows = gsDataCache[c.name];
     if (!cRows) { c._ebitdaVal = -Infinity; return; }
-    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
     let ec = 0, ebitdaRow = null;
     for (let i=0; i<cRows.length; i++) {
       if ((cRows[i][0]||'').toString().trim().toLowerCase().startsWith('ebitda  (')) {
@@ -786,7 +812,7 @@ function buildCompanyCards() {
         }
       }
       if (ebitdaRow) {
-        const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+        const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
         const v = toMillions(getVal(cRows, ebitdaRow, col));
         if (v !== null) { ebitdaMonto = fmtM(Math.round(v)); c._ebitdaMonto = ebitdaMonto; }
       }
@@ -998,7 +1024,7 @@ function buildBVR() {
   function getWaterfall(c) {
     const rows = gsDataCache[c.name];
     if (!rows) return null;
-    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
     let vRow=null, mbPctRow=null, ebitdaPctRow=null, intRow=null, ebtPctRow=null, netPctRow=null;
     let inBlock = false;
     for (let i=0; i<rows.length; i++) {
@@ -1188,7 +1214,7 @@ function openDrawer(id) {
   if (sgBase && sgData && rows) {
     const realVentasRow = findRowByLabel('Ventas 2026', 1);
     const antVentasRow  = findRowByLabel('Ventas 2025', 1);
-    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
 
     // Detect last month with real data
     let lastMonthWithData = null;
@@ -1270,7 +1296,7 @@ function openDrawer(id) {
   // ── Costos ────────────────────────────────────────────────────
   let costRows = '';
   if (rows && dcfg) {
-    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
     const realVentasRow = findRowByLabel('Ventas 2026', 1);
     const vTotal = realVentasRow ? toMillions(getVal(rows, realVentasRow, col)) : null;
     // Find cost rows relative to Ventas 2026 position (more reliable than nth occurrence)
@@ -1306,7 +1332,7 @@ function openDrawer(id) {
   // ── Waterfall de resultados ───────────────────────────────────
   let waterfallHTML = '';
   if (rows) {
-    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
 
     // Find real 2026 block rows
     let vRow=null, mbRow=null, mbPctRow=null, ebitdaRow=null, ebitdaPctRow=null;
@@ -1380,7 +1406,7 @@ function openDrawer(id) {
   // ── Indicadores ───────────────────────────────────────────────
   let indRows = '';
   if (rows && dcfg) {
-    const col = (currentPeriod==='q1'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
+    const col = (currentPeriod==='q1'||currentPeriod==='q2'||currentPeriod==='q3'||currentPeriod==='q4'||currentPeriod==='ytd') ? COL.ytd : PERIOD_COL[currentPeriod];
     // EBITDA %
     const ebitdaRow = findRowByLabel('EBITDA %', 3);
     const ebitdaVal = ebitdaRow ? safeMargen(getVal(rows, ebitdaRow, col)) : null;
@@ -1616,8 +1642,8 @@ const SHEET_CONFIG = {
 };
 
 // Column indices (0-based): A=0, B=1, C=2(Ene)...N=13(Dic), O=14(YTD)
-const COL = { anual:1, ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, oct:10, nov:11, dic:12, ytd:14 };
-const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, q1:COL.ytd, ytd:COL.ytd };
+const COL = { anual:1, ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, sep:10, oct:11, nov:12, dic:13, ytd:14 };
+const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, abr:COL.abr, may:COL.may, jun:COL.jun, jul:COL.jul, ago:COL.ago, sep:COL.sep, oct:COL.oct, nov:COL.nov, dic:COL.dic, q1:COL.ytd, q2:COL.ytd, q3:COL.ytd, q4:COL.ytd, ytd:COL.ytd };
 
 function getBestCol(rows, rowNum, per) {
   if (per === 'q1' || per === 'ytd') return COL.ytd;
