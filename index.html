@@ -40,9 +40,16 @@
   .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
   .header-title { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; color: #f0f0f0; }
   .header-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
-  .period-tabs { display: flex; gap: 2px; background: var(--surface2); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
-  .period-tab { padding: 5px 13px; border-radius: 5px; font-size: 11.5px; font-weight: 500; cursor: pointer; color: var(--text-muted); border: none; background: transparent; transition: all 0.12s; font-family: 'DM Sans', sans-serif; }
+  .period-tabs { display: flex; gap: 4px; align-items: stretch; }
+  .period-group { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 5px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); }
+  .period-tab-q { padding: 4px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer; color: var(--text-muted); border: none; background: transparent; transition: all 0.12s; font-family: 'DM Sans', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; width: 100%; text-align: center; }
+  .period-tab-q.active { background: var(--accent); color: #fff; }
+  .period-tab-q:hover:not(.active) { color: #d0d0d0; }
+  .period-tab-ytd { padding: 4px 12px; }
+  .period-months { display: flex; gap: 2px; }
+  .period-tab { padding: 3px 7px; border-radius: 4px; font-size: 10.5px; font-weight: 500; cursor: pointer; color: var(--text-light); border: none; background: transparent; transition: all 0.12s; font-family: 'DM Sans', sans-serif; }
   .period-tab.active { background: var(--accent); color: #fff; }
+  .period-tab:hover:not(.active) { color: #d0d0d0; background: rgba(255,255,255,0.05); }
 
   /* PERIOD BADGE */
   .period-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; background: rgba(99,102,241,0.2); color: #a5b4fc; margin-left: 10px; vertical-align: middle; }
@@ -367,23 +374,41 @@
         <div class="header-sub" id="headerSub">Datos al 31 de marzo 2025 · Fuente: Google Sheets</div>
       </div>
       <div class="period-tabs" id="periodTabs">
-        <button class="period-tab" data-period="ene">Ene</button>
-        <button class="period-tab" data-period="feb">Feb</button>
-        <button class="period-tab active" data-period="mar">Mar</button>
-        <button class="period-tab" data-period="abr">Abr</button>
-        <button class="period-tab" data-period="may">May</button>
-        <button class="period-tab" data-period="jun">Jun</button>
-        <button class="period-tab" data-period="jul">Jul</button>
-        <button class="period-tab" data-period="ago">Ago</button>
-        <button class="period-tab" data-period="sep">Sep</button>
-        <button class="period-tab" data-period="oct">Oct</button>
-        <button class="period-tab" data-period="nov">Nov</button>
-        <button class="period-tab" data-period="dic">Dic</button>
-        <button class="period-tab" data-period="q1">Q1</button>
-        <button class="period-tab" data-period="q2">Q2</button>
-        <button class="period-tab" data-period="q3">Q3</button>
-        <button class="period-tab" data-period="q4">Q4</button>
-        <button class="period-tab" data-period="ytd">YTD</button>
+        <div class="period-group">
+          <button class="period-tab-q" data-period="q1">Q1</button>
+          <div class="period-months">
+            <button class="period-tab" data-period="ene">Ene</button>
+            <button class="period-tab" data-period="feb">Feb</button>
+            <button class="period-tab active" data-period="mar">Mar</button>
+          </div>
+        </div>
+        <div class="period-group">
+          <button class="period-tab-q" data-period="q2">Q2</button>
+          <div class="period-months">
+            <button class="period-tab" data-period="abr">Abr</button>
+            <button class="period-tab" data-period="may">May</button>
+            <button class="period-tab" data-period="jun">Jun</button>
+          </div>
+        </div>
+        <div class="period-group">
+          <button class="period-tab-q" data-period="q3">Q3</button>
+          <div class="period-months">
+            <button class="period-tab" data-period="jul">Jul</button>
+            <button class="period-tab" data-period="ago">Ago</button>
+            <button class="period-tab" data-period="sep">Sep</button>
+          </div>
+        </div>
+        <div class="period-group">
+          <button class="period-tab-q" data-period="q4">Q4</button>
+          <div class="period-months">
+            <button class="period-tab" data-period="oct">Oct</button>
+            <button class="period-tab" data-period="nov">Nov</button>
+            <button class="period-tab" data-period="dic">Dic</button>
+          </div>
+        </div>
+        <div class="period-group">
+          <button class="period-tab-q period-tab-ytd" data-period="ytd">YTD</button>
+        </div>
       </div>
     </div>
 
@@ -1617,9 +1642,9 @@ function setPeriod(p) {
 // ─────────────────────────────────────────────
 // PERIOD TAB CLICKS
 // ─────────────────────────────────────────────
-document.querySelectorAll('.period-tab').forEach(btn=>{
+document.querySelectorAll('.period-tab, .period-tab-q').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    document.querySelectorAll('.period-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.period-tab, .period-tab-q').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     setPeriod(btn.dataset.period);
   });
@@ -1646,8 +1671,8 @@ const COL = { anual:1, ene:2, feb:3, mar:4, abr:5, may:6, jun:7, jul:8, ago:9, s
 const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, abr:COL.abr, may:COL.may, jun:COL.jun, jul:COL.jul, ago:COL.ago, sep:COL.sep, oct:COL.oct, nov:COL.nov, dic:COL.dic, q1:COL.ytd, q2:COL.ytd, q3:COL.ytd, q4:COL.ytd, ytd:COL.ytd };
 
 function getBestCol(rows, rowNum, per) {
-  if (per === 'q1' || per === 'ytd') return COL.ytd;
-  return PERIOD_COL[per]; // use exact month, even if zero
+  if (['q1','q2','q3','q4','ytd'].includes(per)) return COL.ytd;
+  return PERIOD_COL[per]; // exact month column
 }
 
 let gsSheetId = null;
@@ -1864,6 +1889,11 @@ function applySheetData() {
       return;
     }
 
+    // Ensure all periods exist before processing
+    const allPers = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic','q1','q2','q3','q4','ytd'];
+    const emptyPer = { ventas:'$0M', margen:'0.0%', ebitda:'0.0%', cumplimiento:0, deltaVentas:'—', deltaMargen:'—', spark:[0,0,0,0,0,0,0,0], sg:null, monthly:[], headcount:0 };
+    allPers.forEach(per => { if (!c.periods[per]) c.periods[per] = {...emptyPer}; });
+
     Object.keys(c.periods).forEach(per => {
       if (PERIOD_COL[per] === undefined) return;
       const p = c.periods[per];
@@ -1908,7 +1938,7 @@ function applySheetData() {
         }
         vAntM = sumAnt > 0 ? sumAnt : null;
         // For margen 2025: use same col as real (month or ytd)
-        const colAnt = per === 'q1' || per === 'ytd' ? COL.ytd : col;
+        const colAnt = ['q1','q2','q3','q4','ytd'].includes(per) ? COL.ytd : col;
         mbAnt = getVal(rows, detectedCfg.ant_margen, colAnt);
       }
 
