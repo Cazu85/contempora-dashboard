@@ -1178,7 +1178,25 @@ function openDrawer(id) {
     return null;
   }
 
-  // ── Build monthly data from Google Sheets ────────────────────
+  // ── Helper: get cumulative value for current period ──────────
+  const isAccum = ['q1','q2','q3','q4','ytd'].includes(currentPeriod);
+  const isQtr   = ['q1','q2','q3','q4'].includes(currentPeriod);
+  const qCols   = isQtr ? QUARTER_COLS[currentPeriod] : null;
+  const drawerCol = isAccum ? COL.ytd : PERIOD_COL[currentPeriod];
+
+  function getDrawerVal(rowNum) {
+    if (!rows || !rowNum) return null;
+    if (isQtr && qCols) {
+      const s = sumCols(rows, rowNum, qCols);
+      return s !== null ? s * 1000000 : null;
+    } else if (!isAccum) {
+      // Individual month: sum Ene → this month
+      const monthCols = Array.from({length: drawerCol - COL.ene + 1}, (_, i) => COL.ene + i);
+      const s = sumCols(rows, rowNum, monthCols);
+      return s !== null ? s * 1000000 : null;
+    }
+    return getVal(rows, rowNum, COL.ytd);
+  }
   let monthlyData = [];
   if (rows && cfg) {
     const realVentasRow = findRowByLabel('Ventas 2026', 1);
@@ -1379,13 +1397,12 @@ function openDrawer(id) {
       if (vRow && i > vRow+30) break;
     }
 
-    const gv = row => row ? toMillions(getVal(rows, row, col)) : null;
+    const gv = row => row ? toMillions(getDrawerVal(row)) : null;
     const gp = row => {
       if (!row) return null;
-      const v = getVal(rows, row, col);
+      const v = getVal(rows, row, drawerCol);
       return v !== null ? safeMargen(v) : null;
     };
-
     const ventas = gv(vRow);
     const interesesMonto = gv(intRow);
     const intPct = (interesesMonto !== null && ventas && ventas > 0) ? (interesesMonto/ventas)*100 : null;
