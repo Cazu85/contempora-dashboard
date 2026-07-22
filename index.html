@@ -1920,15 +1920,24 @@ function applySheetData() {
       const isQuarter = ['q1','q2','q3','q4'].includes(per);
       const qCols = isQuarter ? QUARTER_COLS[per] : null;
 
-      // Ventas: sum quarter months or use col directly
-      const vReal = isQuarter && qCols
-        ? (() => { const s = sumCols(rows, detectedCfg.real_ventas, qCols); return s !== null ? s * 1000000 : null; })()
-        : getVal(rows, detectedCfg.real_ventas, col);
+      // Ventas: para meses individuales usar acumulado YTD hasta ese mes
+      let vReal;
+      if (isQuarter && qCols) {
+        const s = sumCols(rows, detectedCfg.real_ventas, qCols);
+        vReal = s !== null ? s * 1000000 : null;
+      } else if (per === 'ytd') {
+        vReal = getVal(rows, detectedCfg.real_ventas, COL.ytd);
+      } else {
+        // Mes individual: sumar desde Ene hasta ese mes
+        const s = sumCols(rows, detectedCfg.real_ventas, 
+          Array.from({length: col - COL.ene + 1}, (_, i) => COL.ene + i));
+        vReal = s !== null ? s * 1000000 : null;
+      }
 
-      // Margen/EBITDA: use last month of quarter or ytd col (these are %, can't sum)
-      const pctCol = isQuarter ? qCols[qCols.length-1] : col;
-      const mbReal = getVal(rows, detectedCfg.real_margen, per === 'ytd' ? COL.ytd : pctCol);
-      const edReal = getVal(rows, detectedCfg.real_ebitda, per === 'ytd' ? COL.ytd : pctCol);
+      // Margen/EBITDA %: usar columna del mes específico (no acumulado, son %)
+      const pctCol = isQuarter ? qCols[qCols.length-1] : (per === 'ytd' ? COL.ytd : col);
+      const mbReal = getVal(rows, detectedCfg.real_margen, pctCol);
+      const edReal = getVal(rows, detectedCfg.real_ebitda, pctCol);
       // Headcount: buscar fila por etiqueta, usar último mes con dato
       let hc = null;
       let hcRow = null;
@@ -1956,16 +1965,18 @@ function applySheetData() {
 
       let vAntM = null;
       let mbAnt = null;
-      if (lastColWithData !== null) {
-        let sumAnt = 0;
-        for (let ci = COL.ene; ci <= lastColWithData; ci++) {
-          const v = toMillions(getVal(rows, detectedCfg.ant_ventas, ci));
-          if (v) sumAnt += v;
+      {
+        const antCols = isQuarter && qCols ? qCols :
+                        per === 'ytd' ? null :
+                        Array.from({length: col - COL.ene + 1}, (_, i) => COL.ene + i);
+        if (antCols) {
+          const s = sumCols(rows, detectedCfg.ant_ventas, antCols);
+          vAntM = s;
+          mbAnt = getVal(rows, detectedCfg.ant_margen, antCols[antCols.length-1]);
+        } else {
+          vAntM = toMillions(getVal(rows, detectedCfg.ant_ventas, COL.ytd));
+          mbAnt = getVal(rows, detectedCfg.ant_margen, COL.ytd);
         }
-        vAntM = sumAnt > 0 ? sumAnt : null;
-        // For margen 2025: use same col as real (month or ytd)
-        const colAnt = ['q1','q2','q3','q4','ytd'].includes(per) ? COL.ytd : col;
-        mbAnt = getVal(rows, detectedCfg.ant_margen, colAnt);
       }
 
       if (vRealM !== null)  p.ventas = fmtVentas(vReal);
@@ -2013,16 +2024,12 @@ function applySheetData() {
           vRealForCumpl = sumReal > 0 ? sumReal : null;
         }
       } else {
-        // Individual month
-        if (lastColWithData !== null) {
-          let sum = 0;
-          for (let ci = COL.ene; ci <= col; ci++) {
-            const v = toMillions(getVal(rows, detectedCfg.ppto_ventas, ci));
-            if (v) sum += v;
-          }
-          vPptoAcum = sum > 0 ? sum : null;
-        }
-        vRealForCumpl = toMillions(vReal);
+        // Mes individual: sumar Ene hasta ese mes
+        const monthCols = Array.from({length: col - COL.ene + 1}, (_, i) => COL.ene + i);
+        const pptoSum = sumCols(rows, detectedCfg.ppto_ventas, monthCols);
+        const realSum = sumCols(rows, detectedCfg.real_ventas, monthCols);
+        vPptoAcum = pptoSum;
+        vRealForCumpl = realSum;
       }
 
       if (vRealForCumpl && vPptoAcum && vPptoAcum !== 0) {
@@ -2100,9 +2107,23 @@ function showDebug() {
     for(let i=0;i<rows.length;i++){if((rows[i][0]||'').toString().includes('EBITDA %')){ec++;if(ec===3){rEb=i+1;break;}}}
 
     lines.push(`✅ ${name} (filas detectadas: V26=${rV26} Ppto=${rPpto} V25=${rV25} Mb=${rMb} Eb=${rEb}):`);
-    if(rV26) lines.push(`   Ventas 2026 YTD: ${getVal(rows,rV26,COL.ytd)} → ${fmtVentas(getVal(rows,rV26,COL.ytd))}`);
+    if(rV26) {
+      lines.push(`   Ventas 2026 YTD: ${getVal(rows,rV26,COL.ytd)} → ${fmtVentas(getVal(rows,rV26,COL.ytd))}`);
+      const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      meses.forEach((m,i)=>{
+        const v = getVal(rows,rV26,COL.ene+i);
+        if(v && v!==0) lines.push(`   Ventas 2026 ${m}: ${v} → ${fmtM(toMillions(v))}`);
+      });
+    }
+    if(rV25) {
+      lines.push(`   Ventas 2025 YTD: ${getVal(rows,rV25,COL.ytd)} → ${fmtVentas(getVal(rows,rV25,COL.ytd))}`);
+      const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      meses.forEach((m,i)=>{
+        const v = getVal(rows,rV25,COL.ene+i);
+        if(v && v!==0) lines.push(`   Ventas 2025 ${m}: ${v} → ${fmtM(toMillions(v))}`);
+      });
+    }
     if(rPpto) lines.push(`   Ppto anual: ${getVal(rows,rPpto,COL.anual)} → ${fmtVentas(getVal(rows,rPpto,COL.anual))}`);
-    if(rV25) lines.push(`   Ventas 2025 YTD: ${getVal(rows,rV25,COL.ytd)} → ${fmtVentas(getVal(rows,rV25,COL.ytd))}`);
     if(rMb) lines.push(`   Margen real YTD: ${getVal(rows,rMb,COL.ytd)} → ${safeMargen(getVal(rows,rMb,COL.ytd))?.toFixed(1)}%`);
     if(rEb) lines.push(`   EBITDA real YTD: ${getVal(rows,rEb,COL.ytd)} → ${safeMargen(getVal(rows,rEb,COL.ytd))?.toFixed(1)}%`);
     lines.push('');
@@ -2364,7 +2385,11 @@ function tryLogin() {
       selectedRole === 'admin' ? '⚙ Admin' : '👁 Viewer';
     document.getElementById('adminOnlyLink').style.display =
       selectedRole === 'admin' ? '' : 'none';
-    // Hide GS connect button for viewers
+    // Refresh GS banner to show/hide debug button based on role
+    const bannerMsg = gsDataCache && Object.keys(gsDataCache).length > 0
+      ? `${Object.keys(gsDataCache).length} hojas cargadas`
+      : 'Conectando…';
+    updateGSBanner(bannerMsg);
     if (selectedRole === 'viewer') {
       document.querySelectorAll('.gs-btn').forEach(b => b.style.display = 'none');
     }
