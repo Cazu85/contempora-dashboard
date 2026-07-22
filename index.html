@@ -1672,8 +1672,26 @@ const PERIOD_COL = { ene:COL.ene, feb:COL.feb, mar:COL.mar, abr:COL.abr, may:COL
 
 function getBestCol(rows, rowNum, per) {
   if (['q1','q2','q3','q4','ytd'].includes(per)) return COL.ytd;
-  return PERIOD_COL[per]; // exact month column
+  return PERIOD_COL[per];
 }
+
+// Sum specific months for a row
+function sumCols(rows, rowNum, cols) {
+  let total = 0;
+  cols.forEach(ci => {
+    const v = toMillions(getVal(rows, rowNum, ci));
+    if (v) total += v;
+  });
+  return total > 0 ? total : null;
+}
+
+const QUARTER_COLS = {
+  q1:  [COL.ene, COL.feb, COL.mar],
+  q2:  [COL.abr, COL.may, COL.jun],
+  q3:  [COL.jul, COL.ago, COL.sep],
+  q4:  [COL.oct, COL.nov, COL.dic],
+  ytd: null, // use COL.ytd directly
+};
 
 let gsSheetId = null;
 let gsDataCache = {};
@@ -1898,11 +1916,19 @@ function applySheetData() {
       if (PERIOD_COL[per] === undefined) return;
       const p = c.periods[per];
 
-      const col    = getBestCol(rows, detectedCfg.real_ventas, per);
+      const col = getBestCol(rows, detectedCfg.real_ventas, per);
+      const isQuarter = ['q1','q2','q3','q4'].includes(per);
+      const qCols = isQuarter ? QUARTER_COLS[per] : null;
 
-      const vReal  = getVal(rows, detectedCfg.real_ventas,  col);
-      const mbReal = getVal(rows, detectedCfg.real_margen,  col);
-      const edReal = getVal(rows, detectedCfg.real_ebitda,  col);
+      // Ventas: sum quarter months or use col directly
+      const vReal = isQuarter && qCols
+        ? (() => { const s = sumCols(rows, detectedCfg.real_ventas, qCols); return s !== null ? s * 1000000 : null; })()
+        : getVal(rows, detectedCfg.real_ventas, col);
+
+      // Margen/EBITDA: use last month of quarter or ytd col (these are %, can't sum)
+      const pctCol = isQuarter ? qCols[qCols.length-1] : col;
+      const mbReal = getVal(rows, detectedCfg.real_margen, per === 'ytd' ? COL.ytd : pctCol);
+      const edReal = getVal(rows, detectedCfg.real_ebitda, per === 'ytd' ? COL.ytd : pctCol);
       // Headcount: buscar fila por etiqueta, usar último mes con dato
       let hc = null;
       let hcRow = null;
@@ -1963,20 +1989,44 @@ function applySheetData() {
         if (hc !== null) c.headcount = Math.round(hc);
       }
 
-      // Cumplimiento: ppto acumulado de los mismos meses con datos reales
+      // Cumplimiento: ppto vs real del período específico
       let vPptoAcum = null;
-      if (lastColWithData !== null) {
-        let sum = 0;
-        for (let ci = COL.ene; ci <= lastColWithData; ci++) {
-          const v = toMillions(getVal(rows, detectedCfg.ppto_ventas, ci));
-          if (v) sum += v;
+      let vRealForCumpl = null;
+
+      if (isQuarter && qCols) {
+        // Quarter: sum specific months
+        const pptoSum = sumCols(rows, detectedCfg.ppto_ventas, qCols);
+        const realSum = sumCols(rows, detectedCfg.real_ventas, qCols);
+        vPptoAcum = pptoSum;
+        vRealForCumpl = realSum;
+      } else if (per === 'ytd') {
+        // YTD: sum all months with data
+        if (lastColWithData !== null) {
+          let sumPpto = 0, sumReal = 0;
+          for (let ci = COL.ene; ci <= lastColWithData; ci++) {
+            const vp = toMillions(getVal(rows, detectedCfg.ppto_ventas, ci));
+            const vr = toMillions(getVal(rows, detectedCfg.real_ventas, ci));
+            if (vp) sumPpto += vp;
+            if (vr) sumReal += vr;
+          }
+          vPptoAcum = sumPpto > 0 ? sumPpto : null;
+          vRealForCumpl = sumReal > 0 ? sumReal : null;
         }
-        vPptoAcum = sum > 0 ? sum : null;
+      } else {
+        // Individual month
+        if (lastColWithData !== null) {
+          let sum = 0;
+          for (let ci = COL.ene; ci <= col; ci++) {
+            const v = toMillions(getVal(rows, detectedCfg.ppto_ventas, ci));
+            if (v) sum += v;
+          }
+          vPptoAcum = sum > 0 ? sum : null;
+        }
+        vRealForCumpl = toMillions(vReal);
       }
-      // vRealM para cumplimiento siempre usa YTD acumulado real
-      const vRealYTD = toMillions(getVal(rows, detectedCfg.real_ventas, COL.ytd));
-      if (vRealYTD && vPptoAcum && vPptoAcum !== 0) {
-        p.cumplimiento = Math.round((vRealYTD / vPptoAcum) * 100);
+
+      if (vRealForCumpl && vPptoAcum && vPptoAcum !== 0) {
+        p.cumplimiento = Math.round((vRealForCumpl / vPptoAcum) * 100);
       }
 
       // Delta ventas vs 2025
